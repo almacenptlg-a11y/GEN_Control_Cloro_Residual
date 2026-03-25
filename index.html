@@ -1,1 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Cloro | Planta</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <div id="app"></div>
+  <div class="info"> &middot; </div>
+
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 pointer-events-none">
+
+    <div class="flex gap-3 mb-6 pointer-events-auto bg-white/10 p-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-lg">
+      <button id="btnTabRegistro" class="px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-bold shadow-md transition-all border border-blue-400/50 w-32 text-center">
+        Registro
+      </button>
+      <button id="btnTabHistorial" class="px-6 py-2.5 rounded-full bg-transparent text-white/80 hover:text-white text-sm font-bold transition-all w-32 text-center">
+        Historial
+      </button>
+    </div>
+
+    <div id="tabRegistro" class="max-w-md w-full bg-white/40 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] border border-white/50 overflow-hidden pointer-events-auto transition-transform duration-300 hover:scale-[1.01]">
+
+      <div class="bg-blue-900/80 backdrop-blur-md p-6 text-white border-b border-white/20">
+        <div class="flex items-center gap-3">
+          <svg class="w-8 h-8 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+          </svg>
+          <div>
+            <h2 class="text-2xl font-bold tracking-tight drop-shadow-md">Registro de Control</h2>
+            <p class="text-blue-100 text-xs font-medium uppercase tracking-wider mt-1 drop-shadow-sm">Cloro residual</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="cloroForm" class="p-6 space-y-5">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-blue-900 uppercase tracking-wide drop-shadow-sm">Fecha</label>
+            <input type="date" id="fecha" required class="w-full pl-3 pr-3 py-2.5 bg-white/60 border border-white/60 rounded-xl text-sm font-medium focus:bg-white/90 focus:ring-2 focus:ring-blue-500 transition-all outline-none text-slate-800 shadow-inner">
+          </div>
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-blue-900 uppercase tracking-wide drop-shadow-sm">Hora</label>
+            <input type="time" id="hora" required class="w-full pl-3 pr-3 py-2.5 bg-white/60 border border-white/60 rounded-xl text-sm font-medium focus:bg-white/90 focus:ring-2 focus:ring-blue-500 transition-all outline-none text-slate-800 shadow-inner">
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-xs font-bold text-blue-900 uppercase tracking-wide drop-shadow-sm">Punto Físico</label>
+          <select id="puntoControl" required class="w-full pl-3 pr-10 py-3 bg-white/60 border border-white/60 rounded-xl text-sm focus:bg-white/90 focus:ring-2 focus:ring-blue-500 transition-all outline-none text-slate-800 font-medium shadow-inner">
+            <option value="P1">📍 P1 - Mantenimiento</option>
+            <option value="P2">📍 P2 - Hielera</option>
+            <option value="P3">📍 P3 - Enfriamiento</option>
+            <option value="P4">📍 P4 - Pelado</option>
+            <option value="P5">📍 P5 - Desposte</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 pt-2">
+          <div class="bg-white/50 p-3 rounded-2xl border border-white/60 text-center relative shadow-sm hover:bg-white/70 transition-colors flex flex-col justify-between group">
+            <label class="block mb-2 drop-shadow-sm">
+              <span class="block text-[11px] font-extrabold text-blue-900 uppercase tracking-wider">Cloro</span>
+              <span class="inline-block bg-blue-100/80 text-blue-800 text-[8px] font-bold px-1.5 py-0.5 rounded mt-1 border border-blue-200/50 tracking-wide">0.5 - 2.0 ppm</span>
+            </label>
+            <input type="number" id="cloro" step="0.01" required placeholder="0.00" class="w-full bg-transparent text-center font-black text-xl text-slate-800 outline-none placeholder:text-slate-400/70 placeholder:font-normal placeholder:text-base transition-all group-hover:scale-105">
+            <span id="cloroAlert" class="text-[10px] bg-red-500 text-white font-bold px-2 py-0.5 rounded absolute -bottom-2 left-1/2 transform -translate-x-1/2 hidden shadow-md whitespace-nowrap">Fuera de rango</span>
+          </div>
+
+          <div class="bg-white/50 p-3 rounded-2xl border border-white/60 text-center relative shadow-sm hover:bg-white/70 transition-colors flex flex-col justify-between group">
+            <label class="block mb-2 drop-shadow-sm">
+              <span class="block text-[11px] font-extrabold text-blue-900 uppercase tracking-wider">pH</span>
+              <span class="inline-block bg-blue-100/80 text-blue-800 text-[8px] font-bold px-1.5 py-0.5 rounded mt-1 border border-blue-200/50 tracking-wide">6.0 - 7.0</span>
+            </label>
+            <input type="number" id="ph" step="0.1" required placeholder="0.0" class="w-full bg-transparent text-center font-black text-xl text-slate-800 outline-none placeholder:text-slate-400/70 placeholder:font-normal placeholder:text-base transition-all group-hover:scale-105">
+            <span id="phAlert" class="text-[10px] bg-red-500 text-white font-bold px-2 py-0.5 rounded absolute -bottom-2 left-1/2 transform -translate-x-1/2 hidden shadow-md whitespace-nowrap">Fuera de rango</span>
+          </div>
+
+          <div class="bg-white/50 p-3 rounded-2xl border border-white/60 text-center relative shadow-sm hover:bg-white/70 transition-colors flex flex-col justify-between group">
+            <label class="block mb-2 drop-shadow-sm">
+              <span class="block text-[11px] font-extrabold text-blue-900 uppercase tracking-wider">Temp</span>
+              <span class="inline-block bg-blue-100/80 text-blue-800 text-[8px] font-bold px-1.5 py-0.5 rounded mt-1 border border-blue-200/50 tracking-wide">&lt; 24.0 °C</span>
+            </label>
+            <input type="number" id="temperatura" step="0.1" required placeholder="0.0" class="w-full bg-transparent text-center font-black text-xl text-slate-800 outline-none placeholder:text-slate-400/70 placeholder:font-normal placeholder:text-base transition-all group-hover:scale-105">
+            <span id="tempAlert" class="text-[10px] bg-red-500 text-white font-bold px-2 py-0.5 rounded absolute -bottom-2 left-1/2 transform -translate-x-1/2 hidden shadow-md whitespace-nowrap">Fuera de rango</span>
+          </div>
+        </div>
+
+        <div class="bg-white/50 p-4 rounded-2xl border border-white/60 shadow-sm transition-all duration-300 group">
+          <div class="flex items-center justify-between cursor-pointer" id="toggleAccionesBtn">
+            <div>
+              <h3 class="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider drop-shadow-sm flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                Gestión de Anomalías
+              </h3>
+            </div>
+            <div class="w-11 h-6 bg-slate-300/60 rounded-full relative transition-colors duration-300 shadow-inner" id="toggleTrack">
+              <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 shadow-md transition-transform duration-300 flex items-center justify-center" id="toggleKnob"></div>
+            </div>
+          </div>
+
+          <div id="accionesContainer" class="hidden mt-3 pt-3 border-t border-white/40 overflow-hidden transition-all space-y-3">
+            <div>
+              <label class="block mb-1 drop-shadow-sm">
+                <span class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider">Cantidad Dosificada (Litros)</span>
+              </label>
+              <div class="relative">
+                <input type="number" id="dosificacion" step="0.01" min="0" placeholder="Ej. 1.50" class="w-full pl-3 pr-10 py-2 bg-white/70 border border-white/60 rounded-xl text-sm font-black text-slate-800 outline-none focus:bg-white/90 focus:ring-2 focus:ring-blue-500 transition-all shadow-inner">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span class="text-slate-500 font-bold text-sm">L</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block mb-1 drop-shadow-sm"><span class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider">Observaciones Operativas</span></label>
+              <input type="text" id="observaciones" placeholder="Ej. Agua con ligera turbidez" class="w-full px-3 py-2 bg-white/70 border border-white/60 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white/90 focus:ring-2 focus:ring-blue-500 transition-all shadow-inner">
+            </div>
+            <div>
+              <label class="block mb-1 drop-shadow-sm"><span class="block text-[10px] font-bold text-blue-900 uppercase tracking-wider">Medidas Correctivas</span></label>
+              <input type="text" id="medidas" placeholder="Ej. Se purgó la tubería" class="w-full px-3 py-2 bg-white/70 border border-white/60 rounded-xl text-sm font-medium text-slate-800 outline-none focus:bg-white/90 focus:ring-2 focus:ring-blue-500 transition-all shadow-inner">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full mt-6 bg-blue-600/90 backdrop-blur-sm hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-[0_4px_15px_rgba(37,99,235,0.4)] transition-all flex justify-center items-center gap-2 active:scale-95 border border-blue-400/30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="drop-shadow-sm">Registrar en Base de Datos</span>
+          <svg id="spinner" class="animate-spin h-5 w-5 text-white hidden absolute right-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </button>
+
+      </form>
+    </div>
+
+    <div id="tabHistorial" class="hidden max-w-4xl w-full bg-white/30 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.2)] border border-white/40 overflow-hidden pointer-events-auto">
+
+      <div class="bg-blue-900/70 backdrop-blur-md p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/20">
+
+        <div class="flex items-center gap-4">
+          <h2 class="text-xl font-bold text-white tracking-tight drop-shadow-md flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Registros
+          </h2>
+
+          <button id="btnImprimirReporte" class="hidden px-4 py-1.5 bg-green-600/90 hover:bg-green-500 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-2 active:scale-95" title="Imprimir Reporte Oficial">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+          </button>
+          <button id="btnDescargarPDF" class="hidden px-4 py-1.5 bg-red-600/90 hover:bg-red-500 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-2 active:scale-95" title="Descargar PDF Oficial">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+          <button id="btnActualizarHistorial" class="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-1 active:scale-95" title="Actualizar BD">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 items-center justify-end">
+
+          <select id="filterPunto" class="px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer">
+            <option value="ALL" class="text-slate-800">Todos los Puntos</option>
+            <option value="P1" class="text-slate-800">P1 - Mantenimiento</option>
+            <option value="P2" class="text-slate-800">P2 - Hielera</option>
+            <option value="P3" class="text-slate-800">P3 - Enfriamiento</option>
+            <option value="P4" class="text-slate-800">P4 - Pelado</option>
+            <option value="P5" class="text-slate-800">P5 - Desposte</option>
+          </select>
+
+          <select id="filterMes" class="px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer">
+            <option value="ALL" class="text-slate-800">Todos los Meses</option>
+          </select>
+
+          <input type="date" id="filterFecha" class="px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer [color-scheme:dark]" title="Buscar día exacto">
+
+          <button id="btnLimpiarFiltros" class="hidden px-3 py-1.5 bg-slate-500/80 hover:bg-slate-600 text-white rounded-lg text-sm font-bold transition-colors shadow-md" title="Limpiar Filtros">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+
+        </div>
+      </div>
+
+      <div class="p-4 h-[500px] overflow-y-auto scrollbar-hide" id="historialGrid">
+        <div class="text-center py-10 text-white/70 font-medium animate-pulse">
+          Cargando datos de la planta...
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>

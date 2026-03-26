@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Control de Cloro | Planta</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,14 +13,14 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 
-<body>
+<body class="overflow-x-hidden overflow-y-auto relative bg-slate-900 min-h-screen font-sans">
 
-  <div id="app"></div>
-  <div class="info"> &middot; </div>
+  <div id="app" class="fixed inset-0 z-0"></div>
+  <div class="info hidden"> &middot; </div>
 
-  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 pointer-events-none">
+  <div class="relative z-10 flex flex-col items-center min-h-screen px-4 py-8 pointer-events-none">
 
-    <div class="flex gap-3 mb-6 pointer-events-auto bg-white/10 p-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-lg">
+    <div class="flex gap-3 mb-6 pointer-events-auto bg-white/10 p-1.5 rounded-full backdrop-blur-md border border-white/20 shadow-lg mt-auto shrink-0">
       <button id="btnTabRegistro" class="px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-bold shadow-md transition-all border border-blue-400/50 w-32 text-center">
         Registro
       </button>
@@ -29,8 +29,8 @@
       </button>
     </div>
 
-    <div id="tabRegistro" class="max-w-md w-full bg-white/40 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] border border-white/50 overflow-hidden pointer-events-auto transition-transform duration-300 hover:scale-[1.01]">
-
+    <div id="tabRegistro" class="max-w-md w-full bg-white/40 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] border border-white/50 overflow-hidden pointer-events-auto transition-transform duration-300 mb-auto shrink-0">
+      
       <div class="bg-blue-900/80 backdrop-blur-md p-6 text-white border-b border-white/20">
         <div class="flex items-center gap-3">
           <svg class="w-8 h-8 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,15 +143,14 @@
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </button>
-
       </form>
     </div>
 
-    <div id="tabHistorial" class="hidden max-w-4xl w-full bg-white/30 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.2)] border border-white/40 overflow-hidden pointer-events-auto">
+    <div id="tabHistorial" class="hidden max-w-5xl w-full bg-white/30 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.2)] border border-white/40 overflow-hidden pointer-events-auto mb-auto shrink-0">
 
       <div class="bg-blue-900/70 backdrop-blur-md p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/20">
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 justify-between w-full md:w-auto">
           <h2 class="text-xl font-bold text-white tracking-tight drop-shadow-md flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -159,50 +158,50 @@
             Registros
           </h2>
 
-          <button id="btnImprimirReporte" class="hidden px-4 py-1.5 bg-green-600/90 hover:bg-green-500 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-2 active:scale-95" title="Imprimir Reporte Oficial">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-            </svg>
-          </button>
-          <button id="btnDescargarPDF" class="hidden px-4 py-1.5 bg-red-600/90 hover:bg-red-500 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-2 active:scale-95" title="Descargar PDF Oficial">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-            </svg>
-          </button>
-          <button id="btnActualizarHistorial" class="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-1 active:scale-95" title="Actualizar BD">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-          </button>
+          <div class="flex gap-2">
+            <button id="btnImprimirReporte" class="hidden px-4 py-1.5 bg-green-600/90 hover:bg-green-500 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-2 active:scale-95" title="Imprimir Reporte Oficial">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+              </svg>
+            </button>
+            <button id="btnDescargarPDF" class="hidden px-4 py-1.5 bg-red-600/90 hover:bg-red-500 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-2 active:scale-95" title="Descargar PDF Oficial">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+            </button>
+            <button id="btnActualizarHistorial" class="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-sm font-bold transition-colors shadow-md flex items-center gap-1 active:scale-95" title="Actualizar BD">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 items-center justify-end">
-
-          <select id="filterPunto" class="px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer">
-            <option value="ALL" class="text-slate-800">Todos los Puntos</option>
-            <option value="P1" class="text-slate-800">P1 - Mantenimiento</option>
+        <div class="flex flex-wrap gap-2 items-center justify-end w-full md:w-auto mt-3 md:mt-0">
+          <select id="filterPunto" class="flex-1 md:flex-none px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer">
+            <option value="ALL" class="text-slate-800">Puntos</option>
+            <option value="P1" class="text-slate-800">P1 - Mto</option>
             <option value="P2" class="text-slate-800">P2 - Hielera</option>
-            <option value="P3" class="text-slate-800">P3 - Enfriamiento</option>
+            <option value="P3" class="text-slate-800">P3 - Enfria</option>
             <option value="P4" class="text-slate-800">P4 - Pelado</option>
             <option value="P5" class="text-slate-800">P5 - Desposte</option>
           </select>
 
-          <select id="filterMes" class="px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer">
-            <option value="ALL" class="text-slate-800">Todos los Meses</option>
+          <select id="filterMes" class="flex-1 md:flex-none px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer">
+            <option value="ALL" class="text-slate-800">Meses</option>
           </select>
 
-          <input type="date" id="filterFecha" class="px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer [color-scheme:dark]" title="Buscar día exacto">
+          <input type="date" id="filterFecha" class="flex-1 md:flex-none px-3 py-1.5 bg-white/20 border border-white/30 text-white rounded-lg text-sm outline-none focus:bg-white/40 transition-colors backdrop-blur-md cursor-pointer [color-scheme:dark]" title="Buscar día exacto">
 
           <button id="btnLimpiarFiltros" class="hidden px-3 py-1.5 bg-slate-500/80 hover:bg-slate-600 text-white rounded-lg text-sm font-bold transition-colors shadow-md" title="Limpiar Filtros">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
-
         </div>
       </div>
 
-      <div class="p-4 h-[500px] overflow-y-auto scrollbar-hide" id="historialGrid">
+      <div class="p-4 max-h-[55vh] md:max-h-[500px] overflow-y-auto scrollbar-hide" id="historialGrid">
         <div class="text-center py-10 text-white/70 font-medium animate-pulse">
           Cargando datos de la planta...
         </div>

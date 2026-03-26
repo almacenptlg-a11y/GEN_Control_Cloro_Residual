@@ -231,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const payload = {
+      action: 'create',
       fecha: document.getElementById("fecha").value,
       hora: document.getElementById("hora").value,
       puntoControl: document.getElementById("puntoControl").value,
@@ -1238,3 +1239,101 @@ document.addEventListener("visibilitychange", () => {
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 })();
+
+// ==============================================================
+// 3. CONTROLADORES CRUD (EDICIÓN Y ELIMINACIÓN)
+// ==============================================================
+
+window.editarRegistro = async (id) => {
+  const reg = historialGlobal.find(r => r.id === id);
+  if (!reg) return;
+
+  const { value: formValues } = await Swal.fire({
+    title: `<span class="text-blue-900 font-bold">Editar ${id}</span>`,
+    html: `
+      <div class="grid grid-cols-2 gap-4 text-left px-2">
+          <div><label class="text-xs font-bold text-slate-500 uppercase">Cloro (ppm)</label>
+          <input id="swal-cloro" type="number" step="0.01" value="${reg.cloro}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div><label class="text-xs font-bold text-slate-500 uppercase">pH</label>
+          <input id="swal-ph" type="number" step="0.1" value="${reg.ph}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div><label class="text-xs font-bold text-slate-500 uppercase">Temp (°C)</label>
+          <input id="swal-temp" type="number" step="0.1" value="${reg.temp}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div><label class="text-xs font-bold text-slate-500 uppercase">Dosific. (L)</label>
+          <input id="swal-dosif" type="number" step="0.01" value="${reg.dosificacion}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Acción Correctiva</label>
+          <input id="swal-medidas" type="text" value="${reg.medidas}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Observaciones</label>
+          <input id="swal-obs" type="text" value="${reg.observaciones}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      return {
+        action: 'update',
+        id: reg.id,
+        cloro: parseFloat(document.getElementById('swal-cloro').value) || 0,
+        ph: parseFloat(document.getElementById('swal-ph').value) || 0,
+        temperatura: parseFloat(document.getElementById('swal-temp').value) || 0,
+        dosificacion: parseFloat(document.getElementById('swal-dosif').value) || "",
+        medidasCorrectivas: document.getElementById('swal-medidas').value,
+        observaciones: document.getElementById('swal-obs').value,
+        usuario: AppState.user ? AppState.user.nombre : "Usuario"
+      }
+    }
+  });
+
+  if (formValues) {
+    ejecutarAccionCRUD(formValues);
+  }
+};
+
+window.eliminarRegistro = (id) => {
+  // Validación de seguridad estricta para borrar
+  const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
+  if (!AppState.user || !rolesPermitidos.includes((AppState.user.rol || '').toUpperCase())) {
+    return Swal.fire({ icon: 'error', title: 'Permiso Denegado', text: 'Solo Jefaturas y Gerencia pueden eliminar registros.' });
+  }
+
+  Swal.fire({
+    title: '¿Estás seguro?',
+    text: `Se eliminará permanentemente el registro ${id}. Esta acción no se puede deshacer.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      ejecutarAccionCRUD({ action: 'delete', id: id });
+    }
+  });
+};
+
+async function ejecutarAccionCRUD(payload) {
+  Swal.fire({ title: 'Procesando...', text: 'Sincronizando con base de datos.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const response = await fetch(BACKEND_URL, { method: "POST", mode: "cors", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    const result = await response.json();
+    
+    if (result.status === "success") {
+      Swal.fire({ icon: 'success', title: 'Completado', text: result.message, timer: 1500, showConfirmButton: false });
+      // IMPORTANTE: Disparamos click en el botón de actualizar historial para refrescar la grilla y el PDF
+      document.getElementById("btnActualizarHistorial").click(); 
+    } else {
+      throw new Error(result.message);
+    }
+  } catch (error) {
+    Swal.fire({ icon: "error", title: "Fallo de Servidor", text: error.message });
+  }
+}

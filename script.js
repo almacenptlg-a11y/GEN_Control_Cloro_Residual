@@ -3,7 +3,8 @@ import * as THREE from "https://unpkg.com/three@0.160.1/build/three.module.js";
 /* ================================================================
    0. CONFIGURACIÓN GLOBAL (Endpoints)
    ================================================================ */
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTsnqzu-i5fmznYdJMJqGHkCaPUWsuCWbIni0x4BeunvIGdl2mq419TdhtZaJI3x6v/exec";
+const BACKEND_URL =
+  "https://script.google.com/macros/s/AKfycbzTsnqzu-i5fmznYdJMJqGHkCaPUWsuCWbIni0x4BeunvIGdl2mq419TdhtZaJI3x6v/exec";
 
 /* ================================================================
    1. LÓGICA DE NEGOCIO Y FRONTEND (HACCP & FETCH)
@@ -17,8 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabRegistro = document.getElementById("tabRegistro");
   const tabHistorial = document.getElementById("tabHistorial");
 
-  const classBtnActive = "px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-bold shadow-md transition-all border border-blue-400/50 w-32 text-center";
-  const classBtnInactive = "px-6 py-2.5 rounded-full bg-transparent text-white/80 hover:text-white text-sm font-bold transition-all w-32 text-center";
+  const classBtnActive =
+    "px-6 py-2.5 rounded-full bg-blue-600 text-white text-sm font-bold shadow-md transition-all border border-blue-400/50 w-32 text-center";
+  const classBtnInactive =
+    "px-6 py-2.5 rounded-full bg-transparent text-white/80 hover:text-white text-sm font-bold transition-all w-32 text-center";
 
   btnTabRegistro.addEventListener("click", () => {
     tabHistorial.classList.add("hidden");
@@ -40,7 +43,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==============================================================
   document.getElementById("fecha").valueAsDate = new Date();
   const now = new Date();
-  document.getElementById("hora").value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  document.getElementById("hora").value = `${String(now.getHours()).padStart(
+    2,
+    "0"
+  )}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   const toggleBtn = document.getElementById("toggleAccionesBtn");
   const toggleTrack = document.getElementById("toggleTrack");
@@ -106,7 +112,10 @@ document.addEventListener("DOMContentLoaded", () => {
       cloro: parseFloat(document.getElementById("cloro").value),
       ph: parseFloat(document.getElementById("ph").value),
       temperatura: parseFloat(document.getElementById("temperatura").value),
-      dosificacion: isAccionesActive && dosificacionInput.value ? parseFloat(dosificacionInput.value) : "",
+      dosificacion:
+        isAccionesActive && dosificacionInput.value
+          ? parseFloat(dosificacionInput.value)
+          : "",
       observaciones: isAccionesActive ? observacionesInput.value : "",
       medidasCorrectivas: isAccionesActive ? medidasInput.value : "",
       usuario: "operario@planta.com"
@@ -134,8 +143,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (result.status === "success") {
         Swal.fire({
           icon: result.data.alarma ? "warning" : "success",
-          title: result.data.alarma ? "Registro con Alerta" : "Guardado Exitoso",
-          text: result.data.alarma ? "Parámetros fuera de límite. Registrado en base de datos." : "Los parámetros han sido registrados correctamente.",
+          title: result.data.alarma
+            ? "Registro con Alerta"
+            : "Guardado Exitoso",
+          text: result.data.alarma
+            ? "Parámetros fuera de límite. Registrado en base de datos."
+            : "Los parámetros han sido registrados correctamente.",
           background: "rgba(255, 255, 255, 0.95)",
           backdrop: "rgba(0,10,30,0.5)",
           confirmButtonColor: "#2563eb"
@@ -143,7 +156,9 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         document.getElementById("fecha").valueAsDate = new Date();
         const resetNow = new Date();
-        document.getElementById("hora").value = `${String(resetNow.getHours()).padStart(2, "0")}:${String(resetNow.getMinutes()).padStart(2, "0")}`;
+        document.getElementById("hora").value = `${String(
+          resetNow.getHours()
+        ).padStart(2, "0")}:${String(resetNow.getMinutes()).padStart(2, "0")}`;
 
         cargarHistorial(); // Refrescar el historial en segundo plano
       } else {
@@ -169,7 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // MOTOR DE HISTORIAL Y FILTROS (LEER DATOS)
   // ==============================================================
   let historialGlobal = [];
-  let registrosFiltrados = []; 
+  let registrosFiltrados = [];
 
   const filterMes = document.getElementById("filterMes");
   const filterFecha = document.getElementById("filterFecha");
@@ -179,12 +194,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnDescargarPDF = document.getElementById("btnDescargarPDF");
   const historialGrid = document.getElementById("historialGrid");
   const btnActualizar = document.getElementById("btnActualizarHistorial");
-  const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const mesesNombres = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre"
+  ];
 
   const cargarHistorial = async (forzarRefresh = false) => {
-    historialGrid.innerHTML = '<div class="text-center py-10 text-white/70 font-medium animate-pulse">Consultando Base de Datos...</div>';
+    historialGrid.innerHTML =
+      '<div class="text-center py-10 text-white/70 font-medium animate-pulse">Consultando Base de Datos...</div>';
     try {
-      const fetchUrl = forzarRefresh ? `${BACKEND_URL}?refresh=true` : BACKEND_URL;
+      const fetchUrl = forzarRefresh
+        ? `${BACKEND_URL}?refresh=true`
+        : BACKEND_URL;
 
       const response = await fetch(fetchUrl, {
         method: "GET",
@@ -193,14 +224,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("text/html"))
-        throw new Error("El servidor devolvió HTML. Verifica el despliegue en GAS.");
+        throw new Error(
+          "El servidor devolvió HTML. Verifica el despliegue en GAS."
+        );
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
       const result = await response.json();
       if (result.status === "success") {
         historialGlobal = result.data;
         if (historialGlobal.length === 0) {
-          historialGrid.innerHTML = '<div class="text-center py-10 text-white/70 font-medium">No hay registros en la base de datos.</div>';
+          historialGrid.innerHTML =
+            '<div class="text-center py-10 text-white/70 font-medium">No hay registros en la base de datos.</div>';
           btnImprimirReporte.classList.add("hidden");
           btnDescargarPDF.classList.add("hidden");
           return;
@@ -218,8 +252,17 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const extraerMesesDinamicos = (data) => {
-    const mesesUnicos = [...new Set(data.map((item) => (item.fecha ? item.fecha.substring(0, 7) : null)).filter(Boolean))].sort().reverse();
-    filterMes.innerHTML = '<option value="ALL" class="text-slate-800">Todos los Meses</option>';
+    const mesesUnicos = [
+      ...new Set(
+        data
+          .map((item) => (item.fecha ? item.fecha.substring(0, 7) : null))
+          .filter(Boolean)
+      )
+    ]
+      .sort()
+      .reverse();
+    filterMes.innerHTML =
+      '<option value="ALL" class="text-slate-800">Todos los Meses</option>';
     mesesUnicos.forEach((mesVal) => {
       const [year, month] = mesVal.split("-");
       const nombreMes = mesesNombres[parseInt(month) - 1];
@@ -250,7 +293,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (registrosFiltrados.length === 0) {
-      historialGrid.innerHTML = '<div class="text-center py-10 text-white/70 font-medium">No hay registros para los filtros seleccionados.</div>';
+      historialGrid.innerHTML =
+        '<div class="text-center py-10 text-white/70 font-medium">No hay registros para los filtros seleccionados.</div>';
       btnImprimirReporte.classList.add("hidden");
       btnDescargarPDF.classList.add("hidden");
       return;
@@ -259,35 +303,73 @@ document.addEventListener("DOMContentLoaded", () => {
     btnImprimirReporte.classList.remove("hidden");
     btnDescargarPDF.classList.remove("hidden");
 
-    let htmlContent = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">';
+    let htmlContent =
+      '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">';
     registrosFiltrados.forEach((item) => {
-      const isAlerta = item.alarma === true || item.alarma === "TRUE" || item.alarma === true;
-      const badgeClass = isAlerta ? "bg-red-500/80 text-white" : "bg-green-500/80 text-white";
+      const isAlerta =
+        item.alarma === true || item.alarma === "TRUE" || item.alarma === true;
+      const badgeClass = isAlerta
+        ? "bg-red-500/80 text-white"
+        : "bg-green-500/80 text-white";
 
       htmlContent += `
-        <div class="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border ${isAlerta ? "border-red-400/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-white/40"} text-slate-800 transition-transform hover:-translate-y-1">
+        <div class="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border ${
+          isAlerta
+            ? "border-red-400/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+            : "border-white/40"
+        } text-slate-800 transition-transform hover:-translate-y-1">
           <div class="flex justify-between items-start mb-2 border-b border-slate-300/50 pb-2">
             <div>
-              <span class="text-[10px] font-black uppercase text-blue-900 bg-blue-100/50 px-2 py-0.5 rounded-md">${item.id}</span>
-              <span class="text-xs font-bold ml-1">${item.fecha} - ${item.hora}</span>
+              <span class="text-[10px] font-black uppercase text-blue-900 bg-blue-100/50 px-2 py-0.5 rounded-md">${
+                item.id
+              }</span>
+              <span class="text-xs font-bold ml-1">${item.fecha} - ${
+        item.hora
+      }</span>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${badgeClass}">${isAlerta ? "Alerta" : "Normal"}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${badgeClass}">${
+        isAlerta ? "Alerta" : "Normal"
+      }</span>
           </div>
           <div class="flex justify-between items-center mb-2">
-            <span class="font-extrabold text-blue-900 flex items-center gap-1">📍 ${item.punto}</span>
+            <span class="font-extrabold text-blue-900 flex items-center gap-1">📍 ${
+              item.punto
+            }</span>
           </div>
           <div class="grid grid-cols-3 gap-2 text-center bg-white/50 rounded-xl p-2 mb-2 shadow-inner">
-            <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${item.cloro < 0.5 || item.cloro > 2.0 ? "text-red-600" : ""}">${item.cloro}</p></div>
-            <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${item.ph < 6.0 || item.ph > 7.0 ? "text-red-600" : ""}">${item.ph}</p></div>
-            <div><p class="text-[9px] font-bold uppercase text-slate-500">Temp</p><p class="font-black ${item.temp >= 24.0 ? "text-red-600" : ""}">${item.temp}°</p></div>
+            <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${
+              item.cloro < 0.5 || item.cloro > 2.0 ? "text-red-600" : ""
+            }">${item.cloro}</p></div>
+            <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${
+              item.ph < 6.0 || item.ph > 7.0 ? "text-red-600" : ""
+            }">${item.ph}</p></div>
+            <div><p class="text-[9px] font-bold uppercase text-slate-500">Temp</p><p class="font-black ${
+              item.temp >= 24.0 ? "text-red-600" : ""
+            }">${item.temp}°</p></div>
           </div>
-          ${item.dosificacion || item.observaciones || item.medidas ? `
+          ${
+            item.dosificacion || item.observaciones || item.medidas
+              ? `
             <div class="bg-blue-50/50 rounded-xl p-2 text-xs border border-blue-200/50">
-              ${item.dosificacion ? `<p><strong class="text-blue-900">Dosificación:</strong> ${item.dosificacion} L</p>` : ""}
-              ${item.medidas ? `<p><strong class="text-blue-900">Acción:</strong> ${item.medidas}</p>` : ""}
-              ${item.observaciones ? `<p><strong class="text-blue-900">Obs:</strong> ${item.observaciones}</p>` : ""}
+              ${
+                item.dosificacion
+                  ? `<p><strong class="text-blue-900">Dosificación:</strong> ${item.dosificacion} L</p>`
+                  : ""
+              }
+              ${
+                item.medidas
+                  ? `<p><strong class="text-blue-900">Acción:</strong> ${item.medidas}</p>`
+                  : ""
+              }
+              ${
+                item.observaciones
+                  ? `<p><strong class="text-blue-900">Obs:</strong> ${item.observaciones}</p>`
+                  : ""
+              }
             </div>
-          ` : ""}
+          `
+              : ""
+          }
         </div>`;
     });
     htmlContent += "</div>";
@@ -301,52 +383,65 @@ document.addEventListener("DOMContentLoaded", () => {
     const mesVal = filterMes.value;
     const fechaVal = filterFecha.value;
     let etiquetaTemporal = "REGISTRO HISTÓRICO";
-    
-    if (fechaVal) etiquetaTemporal = `FECHA: ${fechaVal.split('-').reverse().join('/')}`;
-    else if (mesVal !== 'ALL') {
-      const [y, m] = mesVal.split('-');
-      etiquetaTemporal = `MES: ${mesesNombres[parseInt(m)-1].toUpperCase()} ${y}`;
+
+    if (fechaVal)
+      etiquetaTemporal = `FECHA: ${fechaVal.split("-").reverse().join("/")}`;
+    else if (mesVal !== "ALL") {
+      const [y, m] = mesVal.split("-");
+      etiquetaTemporal = `MES: ${mesesNombres[
+        parseInt(m) - 1
+      ].toUpperCase()} ${y}`;
     }
 
     const registrosAImprimir = [...registrosFiltrados].sort((a, b) => {
       const formatTime = (t) => {
         if (!t) return "00:00:00";
-        const p = t.toString().split(':');
-        const h = (p[0] || "00").padStart(2, '0');
-        const m = (p[1] || "00").padStart(2, '0');
-        const s = (p[2] || "00").padStart(2, '0');
+        const p = t.toString().split(":");
+        const h = (p[0] || "00").padStart(2, "0");
+        const m = (p[1] || "00").padStart(2, "0");
+        const s = (p[2] || "00").padStart(2, "0");
         return `${h}:${m}:${s}`;
       };
-      
+
       const dateTimeA = `${a.fecha || "1970-01-01"}T${formatTime(a.hora)}`;
       const dateTimeB = `${b.fecha || "1970-01-01"}T${formatTime(b.hora)}`;
-      
+
       if (dateTimeA < dateTimeB) return -1;
       if (dateTimeA > dateTimeB) return 1;
       return 0;
     });
 
-    const FILAS_POR_PAGINA = 28; 
-    const totalPaginas = Math.ceil(registrosAImprimir.length / FILAS_POR_PAGINA) || 1;
-    let paginasHTML = '';
+    const FILAS_POR_PAGINA = 28;
+    const totalPaginas =
+      Math.ceil(registrosAImprimir.length / FILAS_POR_PAGINA) || 1;
+    let paginasHTML = "";
 
     for (let i = 0; i < totalPaginas; i++) {
-      const chunk = registrosAImprimir.slice(i * FILAS_POR_PAGINA, (i + 1) * FILAS_POR_PAGINA);
-      let filasHTML = '';
+      const chunk = registrosAImprimir.slice(
+        i * FILAS_POR_PAGINA,
+        (i + 1) * FILAS_POR_PAGINA
+      );
+      let filasHTML = "";
 
-      chunk.forEach(r => {
+      chunk.forEach((r) => {
         const cantidadStr = String(r.dosificacion).trim();
-        const tieneDosificacion = cantidadStr !== "" && cantidadStr !== "0" && parseFloat(cantidadStr) > 0;
-        
-        const siHtml = tieneDosificacion ? 'X' : '';
-        const noHtml = !tieneDosificacion ? 'X' : '';
-        
-        const cantHtml = tieneDosificacion ? r.dosificacion : ''; // Crudo
+        const tieneDosificacion =
+          cantidadStr !== "" &&
+          cantidadStr !== "0" &&
+          parseFloat(cantidadStr) > 0;
+
+        const siHtml = tieneDosificacion ? "X" : "";
+        const noHtml = !tieneDosificacion ? "X" : "";
+
+        const cantHtml = tieneDosificacion ? r.dosificacion : ""; // Crudo
         const cloroHtml = r.cloro; // Crudo
-        const monitoreador = r.usuario || ''; // Crudo
-        
-        const fParts = r.fecha.split('-');
-        const fechaLimpia = fParts.length === 3 ? `${fParts[2]}/${fParts[1]}/${fParts[0]}` : r.fecha;
+        const monitoreador = r.usuario || ""; // Crudo
+
+        const fParts = r.fecha.split("-");
+        const fechaLimpia =
+          fParts.length === 3
+            ? `${fParts[2]}/${fParts[1]}/${fParts[0]}`
+            : r.fecha;
 
         filasHTML += `
           <tr>
@@ -360,8 +455,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <td class="col-strong" style="color: #b91c1c;">${noHtml}</td>
             <td class="col-strong">${cantHtml}</td>
             <td style="font-size: 7.5px; font-weight: bold;">${monitoreador}</td>
-            <td class="col-obs">${r.observaciones || ''}</td>
-            <td class="col-obs">${r.medidas || ''}</td>
+            <td class="col-obs">${r.observaciones || ""}</td>
+            <td class="col-obs">${r.medidas || ""}</td>
           </tr>
         `;
       });
@@ -369,14 +464,18 @@ document.addEventListener("DOMContentLoaded", () => {
       // Nota: Ya no se agregan filas vacías para mantener solo los datos reales.
 
       paginasHTML += `
-        <div class="page-container" ${i < totalPaginas - 1 ? 'style="page-break-after: always;"' : ''}>
+        <div class="page-container" ${
+          i < totalPaginas - 1 ? 'style="page-break-after: always;"' : ""
+        }>
             <div class="header-grid">
                 <div class="logo-box"><div class="logo-text">LA<br>GENOVESA</div><div class="logo-sub">DESDE 1977</div></div>
                 <div class="title-box">
                     <div class="title-main">PROGRAMA DE LIMPIEZA Y DESINFECCIÓN</div>
                     <div class="title-secondary">REGISTRO DE CONTROL DE CLORO RESIDUAL</div>
                     <table class="meta-table">
-                        <tr><td><span class="meta-bold">Versión:</span> 4</td><td><span class="meta-bold">Fecha:</span> 08/2025</td><td><span class="meta-bold">Página:</span> ${i + 1} de ${totalPaginas}</td><td><span class="meta-bold">Código:</span> LGA-LYD-SAF6</td></tr>
+                        <tr><td><span class="meta-bold">Versión:</span> 4</td><td><span class="meta-bold">Fecha:</span> 08/2025</td><td><span class="meta-bold">Página:</span> ${
+                          i + 1
+                        } de ${totalPaginas}</td><td><span class="meta-bold">Código:</span> LGA-LYD-SAF6</td></tr>
                         <tr><td colspan="2"><span class="meta-bold">Elaborado:</span> Aseg. Calidad</td><td><span class="meta-bold">Revisado:</span> Sub Gerente</td><td><span class="meta-bold">Aprobado:</span> Gerente Gral.</td></tr>
                     </table>
                 </div>
@@ -425,7 +524,9 @@ document.addEventListener("DOMContentLoaded", () => {
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: 'Inter', -apple-system, sans-serif; font-size: 8.5px; color: var(--text-main); background: #fff; line-height: 1.2; }
       .pdf-master-container { width: 190mm; margin: 0 auto; background: #fff; }
-      .page-container { padding: ${isForPDF ? '0' : '10mm'}; min-height: ${isForPDF ? '277mm' : '100vh'}; display: flex; flex-direction: column; box-sizing: border-box; }
+      .page-container { padding: ${isForPDF ? "0" : "10mm"}; min-height: ${
+      isForPDF ? "277mm" : "100vh"
+    }; display: flex; flex-direction: column; box-sizing: border-box; }
       .header-grid { display: grid; grid-template-columns: 100px 1fr; border: 2px solid var(--border-dark); margin-bottom: 10px; }
       .logo-box { border-right: 2px solid var(--border-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
       .logo-text { color: var(--brand-red); font-weight: 900; font-size: 14px; text-align: center; }
@@ -641,8 +742,15 @@ function drawBackground() {
   bgCtx.globalAlpha = 1;
 
   const words = [
-    "planta", "produccion", "control", "cloro", "residual",
-    "precisión", "calidad", "Agroindustrias", "Genovesa"
+    "planta",
+    "produccion",
+    "control",
+    "cloro",
+    "residual",
+    "precisión",
+    "calidad",
+    "Agroindustrias",
+    "Genovesa"
   ];
   bgCtx.globalAlpha = 0.08;
   const scatterSize = Math.round(w * 0.018);
@@ -664,7 +772,11 @@ drawBackground();
 const MAX_ENTRIES = MAX_DROPLETS * 2;
 const dropletBuf = new Float32Array(MAX_ENTRIES * 4);
 const dropletTex = new THREE.DataTexture(
-  dropletBuf, MAX_ENTRIES, 1, THREE.RGBAFormat, THREE.FloatType
+  dropletBuf,
+  MAX_ENTRIES,
+  1,
+  THREE.RGBAFormat,
+  THREE.FloatType
 );
 dropletTex.minFilter = THREE.NearestFilter;
 dropletTex.magFilter = THREE.NearestFilter;
@@ -679,14 +791,22 @@ function spawn(x, y, r, vx = 0, vy = 0) {
   const angle = Math.random() * Math.PI * 2;
   const spd = 0.0003 + Math.random() * 0.0008;
   const d = {
-    id: uid++, x, y, r, area,
+    id: uid++,
+    x,
+    y,
+    r,
+    area,
     vx: vx || Math.cos(angle) * spd,
     vy: vy || Math.sin(angle) * spd,
     alive: true,
     wanderAngle: Math.random() * Math.PI * 2,
     wanderSpeed: 0.3 + Math.random() * 0.5,
-    softPrevX: x, softPrevY: y, softOffX: 0, softOffY: 0,
-    softVelX: 0, softVelY: 0
+    softPrevX: x,
+    softPrevY: y,
+    softOffX: 0,
+    softOffY: 0,
+    softVelX: 0,
+    softVelY: 0
   };
   drops.push(d);
   return d;
@@ -782,7 +902,25 @@ renderer.domElement.addEventListener("pointermove", (e) => {
   mouse.y = 0.5 - (e.clientY - rect.top) / rect.height;
   mouse.active = true;
 });
-renderer.domElement.addEventListener("pointerdown", () => (mouse.down = true));
+
+renderer.domElement.addEventListener("pointerdown", (e) => {
+  // 1. Capturamos la coordenada exacta del toque en móvil
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width - 0.5) * aspect;
+  mouse.y = 0.5 - (e.clientY - rect.top) / rect.height;
+  mouse.active = true;
+  mouse.down = true;
+
+  // 2. Magia Móvil: Forzamos una explosión de 4 burbujas instantáneas al tocar
+  for (let i = 0; i < 4; i++) {
+    spawn(
+      mouse.x + (Math.random() - 0.5) * 0.08, // Ligera dispersión X
+      mouse.y + (Math.random() - 0.5) * 0.08, // Ligera dispersión Y
+      0.02 + Math.random() * 0.03 // Tamaños aleatorios
+    );
+  }
+});
+
 renderer.domElement.addEventListener("pointerup", () => (mouse.down = false));
 renderer.domElement.addEventListener("pointerleave", () => {
   mouse.active = false;

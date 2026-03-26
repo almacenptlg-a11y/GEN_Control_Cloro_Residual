@@ -278,11 +278,16 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // 3. LIMPIEZA ABSOLUTA DEL FORMULARIO
         form.reset();
-        
-        // Limpiamos las alertas de "Fuera de Rango" residuales
-        ["cloro", "ph", "temperatura"].forEach(id => {
-            const inputEl = document.getElementById(id);
-            const alertEl = document.getElementById(`${id}Alert`);
+        const camposAlertas = {
+          "cloro": "cloroAlert",
+          "ph": "phAlert",
+          "temperatura": "tempAlert" 
+        };
+
+        Object.entries(camposAlertas).forEach(([inputId, alertId]) => {
+            const inputEl = document.getElementById(inputId);
+            const alertEl = document.getElementById(alertId);
+            
             if (inputEl) inputEl.classList.remove("text-red-600");
             if (alertEl) alertEl.classList.add("hidden");
         });
@@ -292,7 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const resetNow = new Date();
         document.getElementById("hora").value = `${String(resetNow.getHours()).padStart(2, "0")}:${String(resetNow.getMinutes()).padStart(2, "0")}`;
 
-        cargarHistorial(); 
+        cargarHistorial();
       } else {
         throw new Error(result.message);
       }

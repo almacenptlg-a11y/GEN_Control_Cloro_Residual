@@ -427,16 +427,21 @@ document.addEventListener("DOMContentLoaded", () => {
           usuarioCrudo = usuarioCrudo.split('@')[0].replace('.', ' '); // Limpia los viejos
       }
       const usuarioNombreCompleto = usuarioCrudo.toUpperCase();
-
-      htmlContent += `
+         htmlContent += `
         <div class="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border ${isAlerta ? "border-red-400/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-white/40"} text-slate-800 transition-transform hover:-translate-y-1">
+          
           <div class="flex justify-between items-start mb-2 border-b border-slate-300/50 pb-2">
             <div>
               <span class="text-[10px] font-black uppercase text-blue-900 bg-blue-100/50 px-2 py-0.5 rounded-md">${item.id}</span>
               <span class="text-xs font-bold ml-1">${item.fecha} - ${item.hora}</span>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${badgeClass}">${isAlerta ? "Alerta" : "Normal"}</span>
-          </div>
+            <div class="flex items-center gap-2">
+               <button onclick="editarRegistro('${item.id}')" class="text-slate-400 hover:text-blue-600 transition-colors" title="Editar Registro"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+               <button onclick="eliminarRegistro('${item.id}')" class="text-slate-400 hover:text-red-600 transition-colors" title="Eliminar Registro"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+               
+               <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ml-1 ${badgeClass}">${isAlerta ? "Alerta" : "Normal"}</span>
+            </div>
+          </div>     
           
           <div class="flex justify-between items-center mb-3 mt-1">
             <span class="font-extrabold text-blue-900 flex items-center gap-1 text-[11px] md:text-xs tracking-tight">📍 ${nombrePuntoExtendido}</span>

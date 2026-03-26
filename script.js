@@ -182,11 +182,42 @@ document.addEventListener("DOMContentLoaded", () => {
   validateInput("temperatura", 24, null, "tempAlert");
 
   // ==============================================================
-  // SUBMIT (GUARDAR DATOS) - AHORA BLINDADO POR SESIÓN
+  // INTERCEPCIÓN DEL TECLADO (NAVEGACIÓN CON ENTER)
   // ==============================================================
   const form = document.getElementById("cloroForm");
+  
+  form.addEventListener('keydown', (e) => {
+    // Si presiona Enter y NO es el botón de submit, bloqueamos el envío automático
+    if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+      e.preventDefault(); // Bloquea el comportamiento por defecto (Submit)
+      
+      // Definimos el flujo lógico de los campos
+      const flujoBase = ['fecha', 'hora', 'puntoControl', 'cloro', 'ph', 'temperatura'];
+      const flujoAnomalias = ['dosificacion', 'observaciones', 'medidas'];
+      
+      // Si el panel de anomalías está abierto, lo sumamos al flujo
+      let flujoActivo = [...flujoBase];
+      if (isAccionesActive) flujoActivo = flujoActivo.concat(flujoAnomalias);
+      
+      const currentId = e.target.id;
+      const currentIndex = flujoActivo.indexOf(currentId);
+      
+      // Si existe un campo siguiente, le pasamos el foco
+      if (currentIndex > -1 && currentIndex < flujoActivo.length - 1) {
+        const nextInput = document.getElementById(flujoActivo[currentIndex + 1]);
+        if (nextInput) nextInput.focus();
+      } else if (currentIndex === flujoActivo.length - 1) {
+        // Si es el último campo, simplemente le quitamos el foco. 
+        // El operario DEBE hacer clic explícito en el botón de guardar.
+        e.target.blur(); 
+      }
+    }
+  });
+
+  // ==============================================================
+  // SUBMIT EXPLÍCITO (GUARDAR DATOS) - BLINDADO POR SESIÓN
+  // ==============================================================
   const submitBtn = document.getElementById("submitBtn");
-  const spinner = document.getElementById("spinner");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -209,13 +240,16 @@ document.addEventListener("DOMContentLoaded", () => {
       dosificacion: isAccionesActive && dosificacionInput.value ? parseFloat(dosificacionInput.value) : "",
       observaciones: isAccionesActive ? observacionesInput.value : "",
       medidasCorrectivas: isAccionesActive ? medidasInput.value : "",
-      // 2. INYECCIÓN DEL USUARIO REAL
       usuario: AppState.user.usuario
     };
 
+    // 2. ANIMACIÓN DEL BOTÓN DE GUARDADO
     submitBtn.disabled = true;
     submitBtn.classList.add("opacity-75", "cursor-not-allowed");
-    if(spinner) spinner.classList.remove("hidden");
+    
+    // Extraemos el spinner en el momento exacto para evitar conflictos de reemplazo de DOM
+    const currentSpinner = submitBtn.querySelector("#spinner");
+    if(currentSpinner) currentSpinner.classList.remove("hidden");
 
     try {
       const response = await fetch(BACKEND_URL, {
@@ -241,7 +275,19 @@ document.addEventListener("DOMContentLoaded", () => {
           backdrop: "rgba(0,10,30,0.5)",
           confirmButtonColor: "#2563eb"
         });
+        
+        // 3. LIMPIEZA ABSOLUTA DEL FORMULARIO
         form.reset();
+        
+        // Limpiamos las alertas de "Fuera de Rango" residuales
+        ["cloro", "ph", "temperatura"].forEach(id => {
+            const inputEl = document.getElementById(id);
+            const alertEl = document.getElementById(`${id}Alert`);
+            if (inputEl) inputEl.classList.remove("text-red-600");
+            if (alertEl) alertEl.classList.add("hidden");
+        });
+
+        // Restaurar Fecha y Hora actuales para el siguiente registro
         document.getElementById("fecha").valueAsDate = new Date();
         const resetNow = new Date();
         document.getElementById("hora").value = `${String(resetNow.getHours()).padStart(2, "0")}:${String(resetNow.getMinutes()).padStart(2, "0")}`;
@@ -257,9 +303,11 @@ document.addEventListener("DOMContentLoaded", () => {
         background: "rgba(255, 255, 255, 0.95)", confirmButtonColor: "#dc2626"
       });
     } finally {
+      // 4. RESTAURAR BOTÓN Y ANIMACIÓN
       submitBtn.disabled = false;
       submitBtn.classList.remove("opacity-75", "cursor-not-allowed");
-      if(spinner) spinner.classList.add("hidden");
+      const endSpinner = submitBtn.querySelector("#spinner");
+      if(endSpinner) endSpinner.classList.add("hidden");
     }
   });
 

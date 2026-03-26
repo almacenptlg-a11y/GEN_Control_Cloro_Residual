@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dosificacion: isAccionesActive && dosificacionInput.value ? parseFloat(dosificacionInput.value) : "",
       observaciones: isAccionesActive ? observacionesInput.value : "",
       medidasCorrectivas: isAccionesActive ? medidasInput.value : "",
-      usuario: AppState.user.usuario
+      usuario: AppState.user.nombre
     };
 
     // 2. ANIMACIÓN DEL BOTÓN DE GUARDADO
@@ -413,13 +413,19 @@ document.addEventListener("DOMContentLoaded", () => {
       "P5": "P5 - Desposte"
     };
 
-    registrosFiltrados.forEach((item) => {
+   registrosFiltrados.forEach((item) => {
       const isAlerta = item.alarma === true || item.alarma === "TRUE" || item.alarma === true;
       const badgeClass = isAlerta ? "bg-red-500/80 text-white" : "bg-green-500/80 text-white";
 
       // PREPARACIÓN DE DATOS EXTRA
       const nombrePuntoExtendido = nombresPuntos[item.punto] || item.punto;
-      const usuarioCorto = (item.usuario || 'OPER').split('@')[0].toUpperCase().replace('.', ' ');
+      
+      // NUEVO: Lógica de Nombre Completo con retrocompatibilidad para registros viejos
+      let usuarioCrudo = item.usuario || 'OPERARIO';
+      if (usuarioCrudo.includes('@')) {
+          usuarioCrudo = usuarioCrudo.split('@')[0].replace('.', ' '); // Limpia los viejos
+      }
+      const usuarioNombreCompleto = usuarioCrudo.toUpperCase();
 
       htmlContent += `
         <div class="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border ${isAlerta ? "border-red-400/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-white/40"} text-slate-800 transition-transform hover:-translate-y-1">
@@ -435,10 +441,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="font-extrabold text-blue-900 flex items-center gap-1 text-[11px] md:text-xs tracking-tight">📍 ${nombrePuntoExtendido}</span>
             <span class="text-[9px] font-bold text-slate-600 bg-white/50 border border-slate-300/50 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
               <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-              ${usuarioCorto}
-            </span>
+              ${usuarioNombreCompleto} </span>
           </div>
-
           <div class="grid grid-cols-3 gap-2 text-center bg-white/50 rounded-xl p-2 mb-2 shadow-inner">
             <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${item.cloro < 0.5 || item.cloro > 2.0 ? "text-red-600" : ""}">${item.cloro}</p></div>
             <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${item.ph < 6.0 || item.ph > 7.0 ? "text-red-600" : ""}">${item.ph}</p></div>

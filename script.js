@@ -1249,11 +1249,11 @@ document.addEventListener("visibilitychange", () => {
 // 3. CONTROLADORES CRUD (EDICIÓN Y ELIMINACIÓN)
 // ==============================================================
 
-window.editarRegistro = async (id) => {
+window.editarRegistro = (id) => {
   const reg = historialGlobal.find(r => r.id === id);
   if (!reg) return;
 
-  const { value: formValues } = await Swal.fire({
+  Swal.fire({
     title: `<span class="text-blue-900 font-bold">Editar ${id}</span>`,
     html: `
       <div class="grid grid-cols-2 gap-4 text-left px-2">
@@ -1270,10 +1270,10 @@ window.editarRegistro = async (id) => {
           <input id="swal-dosif" type="number" step="0.01" value="${reg.dosificacion}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
           
           <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Acción Correctiva</label>
-          <input id="swal-medidas" type="text" value="${reg.medidas}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          <input id="swal-medidas" type="text" value="${reg.medidas || ''}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
           
           <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Observaciones</label>
-          <input id="swal-obs" type="text" value="${reg.observaciones}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          <input id="swal-obs" type="text" value="${reg.observaciones || ''}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
       </div>
     `,
     focusConfirm: false,
@@ -1283,23 +1283,37 @@ window.editarRegistro = async (id) => {
     confirmButtonText: 'Guardar Cambios',
     cancelButtonText: 'Cancelar',
     preConfirm: () => {
+      // Validamos que los inputs existan y recolectamos la información
+      const inputCloro = document.getElementById('swal-cloro');
+      const inputPh = document.getElementById('swal-ph');
+      const inputTemp = document.getElementById('swal-temp');
+      const inputDosif = document.getElementById('swal-dosif');
+      const inputMedidas = document.getElementById('swal-medidas');
+      const inputObs = document.getElementById('swal-obs');
+
+      if (!inputCloro || !inputPh || !inputTemp) {
+        Swal.showValidationMessage('Error al leer los datos del formulario');
+        return false;
+      }
+
       return {
         action: 'update',
         id: reg.id,
-        cloro: parseFloat(document.getElementById('swal-cloro').value) || 0,
-        ph: parseFloat(document.getElementById('swal-ph').value) || 0,
-        temperatura: parseFloat(document.getElementById('swal-temp').value) || 0,
-        dosificacion: parseFloat(document.getElementById('swal-dosif').value) || "",
-        medidasCorrectivas: document.getElementById('swal-medidas').value,
-        observaciones: document.getElementById('swal-obs').value,
+        cloro: parseFloat(inputCloro.value) || 0,
+        ph: parseFloat(inputPh.value) || 0,
+        temperatura: parseFloat(inputTemp.value) || 0,
+        dosificacion: parseFloat(inputDosif.value) || "",
+        medidasCorrectivas: inputMedidas.value,
+        observaciones: inputObs.value,
         usuario: AppState.user ? AppState.user.nombre : "Usuario"
-      }
+      };
+    }
+  }).then((result) => {
+    // Si el usuario hace clic en "Guardar Cambios", ejecutamos el CRUD
+    if (result.isConfirmed && result.value) {
+      ejecutarAccionCRUD(result.value);
     }
   });
-
-  if (formValues) {
-    ejecutarAccionCRUD(formValues);
-  }
 };
 
 window.eliminarRegistro = (id) => {
@@ -1326,15 +1340,37 @@ window.eliminarRegistro = (id) => {
 };
 
 async function ejecutarAccionCRUD(payload) {
-  Swal.fire({ title: 'Procesando...', text: 'Sincronizando con base de datos.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  // Mostramos el estado de carga antes de iniciar la petición
+  Swal.fire({ 
+    title: 'Procesando...', 
+    text: 'Sincronizando con base de datos.', 
+    allowOutsideClick: false, 
+    didOpen: () => Swal.showLoading() 
+  });
+  
   try {
-    const response = await fetch(BACKEND_URL, { method: "POST", mode: "cors", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    const response = await fetch(BACKEND_URL, { 
+      method: "POST", 
+      mode: "cors", 
+      redirect: "follow", 
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+      body: JSON.stringify(payload) 
+    });
+    
+    // Verificamos que el servidor haya devuelto JSON
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("text/html")) throw new Error("Error del servidor (HTML devuelto).");
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
     const result = await response.json();
     
     if (result.status === "success") {
       Swal.fire({ icon: 'success', title: 'Completado', text: result.message, timer: 1500, showConfirmButton: false });
-      // IMPORTANTE: Disparamos click en el botón de actualizar historial para refrescar la grilla y el PDF
-      document.getElementById("btnActualizarHistorial").click(); 
+      
+      // Forzar una recarga completa del historial, simulando un clic en el botón "Actualizar BD"
+      const btnRefresh = document.getElementById("btnActualizarHistorial");
+      if (btnRefresh) btnRefresh.click();
+      
     } else {
       throw new Error(result.message);
     }

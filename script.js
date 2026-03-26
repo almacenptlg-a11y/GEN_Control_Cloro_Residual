@@ -11,17 +11,49 @@ const AppState = {
   isSessionVerified: false
 };
 
+// --- NUEVO: FUNCIÓN DE BLINDAJE DE ACCESO ---
+function verificarAcceso(user) {
+  if (!user) return false;
+  const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
+  const userRol = (user.rol || '').toUpperCase();
+  const userArea = (user.area || '').toUpperCase();
+  
+  return rolesPermitidos.includes(userRol) || userArea === 'CALIDAD';
+}
+
+function bloquearInterfaz() {
+  Swal.fire({
+    icon: "error",
+    title: "Acceso Restringido",
+    text: "Este módulo es exclusivo para el área de Calidad, Jefaturas y Gerencia.",
+    background: "rgba(255, 255, 255, 0.95)",
+    backdrop: "rgba(0,10,30,0.9)", // Fondo oscuro intenso
+    allowOutsideClick: false, // Evita cerrar dando clic afuera
+    allowEscapeKey: false, // Evita cerrar con ESC
+    showConfirmButton: false // Quita el botón de OK
+  });
+  
+  // Desaparece toda la UI (formularios, tablas, etc.) dejando solo el fondo 3D activo
+  const appContainer = document.querySelector(".relative.z-10.flex.flex-col");
+  if (appContainer) appContainer.style.display = "none";
+}
+
 // 2. Seguridad y Comunicación con el Padre (Hub)
 window.addEventListener('message', (event) => {
   const { type, user, theme } = event.data || {};
   
-  // Soporte futuro para Modo Oscuro heredado del Hub
   if (type === 'THEME_UPDATE') {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }
 
   if (type === 'SESSION_SYNC' && user) {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    
+    // VALIDACIÓN ESTRICTA DE ROL/ÁREA
+    if (!verificarAcceso(user)) {
+      bloquearInterfaz();
+      return; // Destruimos la ejecución aquí, no se inicia la sesión local
+    }
     
     AppState.user = user;
     AppState.isSessionVerified = true;
@@ -41,19 +73,22 @@ window.addEventListener('message', (event) => {
    1. LÓGICA DE NEGOCIO Y FRONTEND (HACCP & FETCH)
    ================================================================ */
 document.addEventListener("DOMContentLoaded", () => {
-  // ==============================================================
-  // INICIALIZACIÓN DE SESIÓN EN EL DOM
-  // ==============================================================
+  
+  // Verificar si ya hay una sesión guardada y validarla
   const savedUser = sessionStorage.getItem('moduloCloroUser');
   if (savedUser) {
-    AppState.user = JSON.parse(savedUser);
-    AppState.isSessionVerified = true;
+    const userParseado = JSON.parse(savedUser);
+    if (verificarAcceso(userParseado)) {
+      AppState.user = userParseado;
+      AppState.isSessionVerified = true;
+    } else {
+      sessionStorage.removeItem('moduloCloroUser');
+      bloquearInterfaz();
+    }
   }
   
-  // Avisar al Hub que estamos listos para recibir los datos
   window.parent.postMessage({ type: 'MODULO_LISTO' }, '*');
   
-  // Timeout de seguridad: Si en 4 segundos no hay sesión, bloquear UI
   setTimeout(() => {
     if (!AppState.isSessionVerified) {
       const btn = document.getElementById("submitBtn");

@@ -373,7 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const renderizarHistorial = () => {
+ const renderizarHistorial = () => {
     const mes = filterMes.value;
     const fechaExacta = filterFecha.value;
     const punto = filterPunto.value;
@@ -403,9 +403,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if(btnDescargarPDF) btnDescargarPDF.classList.remove("hidden");
 
     let htmlContent = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">';
+    
+    // DICCIONARIO: Traducción de códigos a nombres reales
+    const nombresPuntos = {
+      "P1": "P1 - Mantenimiento",
+      "P2": "P2 - Hielera",
+      "P3": "P3 - Enfriamiento",
+      "P4": "P4 - Pelado",
+      "P5": "P5 - Desposte"
+    };
+
     registrosFiltrados.forEach((item) => {
       const isAlerta = item.alarma === true || item.alarma === "TRUE" || item.alarma === true;
       const badgeClass = isAlerta ? "bg-red-500/80 text-white" : "bg-green-500/80 text-white";
+
+      // PREPARACIÓN DE DATOS EXTRA
+      const nombrePuntoExtendido = nombresPuntos[item.punto] || item.punto;
+      const usuarioCorto = (item.usuario || 'OPER').split('@')[0].toUpperCase().replace('.', ' ');
 
       htmlContent += `
         <div class="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border ${isAlerta ? "border-red-400/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-white/40"} text-slate-800 transition-transform hover:-translate-y-1">
@@ -416,9 +430,15 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${badgeClass}">${isAlerta ? "Alerta" : "Normal"}</span>
           </div>
-          <div class="flex justify-between items-center mb-2">
-            <span class="font-extrabold text-blue-900 flex items-center gap-1">📍 ${item.punto}</span>
+          
+          <div class="flex justify-between items-center mb-3 mt-1">
+            <span class="font-extrabold text-blue-900 flex items-center gap-1 text-[11px] md:text-xs tracking-tight">📍 ${nombrePuntoExtendido}</span>
+            <span class="text-[9px] font-bold text-slate-600 bg-white/50 border border-slate-300/50 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
+              <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+              ${usuarioCorto}
+            </span>
           </div>
+
           <div class="grid grid-cols-3 gap-2 text-center bg-white/50 rounded-xl p-2 mb-2 shadow-inner">
             <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${item.cloro < 0.5 || item.cloro > 2.0 ? "text-red-600" : ""}">${item.cloro}</p></div>
             <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${item.ph < 6.0 || item.ph > 7.0 ? "text-red-600" : ""}">${item.ph}</p></div>

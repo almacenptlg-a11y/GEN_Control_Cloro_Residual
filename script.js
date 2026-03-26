@@ -1249,6 +1249,7 @@ document.addEventListener("visibilitychange", () => {
 // 3. CONTROLADORES CRUD (EDICIÓN Y ELIMINACIÓN)
 // ==============================================================
 
+// ⚠️ CORRECCIÓN CLAVE: Agregamos window. para que el HTML pueda llamar a la función
 window.editarRegistro = (id) => {
   const reg = historialGlobal.find(r => r.id === id);
   if (!reg) return;
@@ -1283,7 +1284,6 @@ window.editarRegistro = (id) => {
     confirmButtonText: 'Guardar Cambios',
     cancelButtonText: 'Cancelar',
     preConfirm: () => {
-      // Validamos que los inputs existan y recolectamos la información
       const inputCloro = document.getElementById('swal-cloro');
       const inputPh = document.getElementById('swal-ph');
       const inputTemp = document.getElementById('swal-temp');
@@ -1309,15 +1309,14 @@ window.editarRegistro = (id) => {
       };
     }
   }).then((result) => {
-    // Si el usuario hace clic en "Guardar Cambios", ejecutamos el CRUD
     if (result.isConfirmed && result.value) {
       ejecutarAccionCRUD(result.value);
     }
   });
 };
 
+// ⚠️ CORRECCIÓN CLAVE: Hacemos la función eliminarRegistro global
 window.eliminarRegistro = (id) => {
-  // Validación de seguridad estricta para borrar
   const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
   if (!AppState.user || !rolesPermitidos.includes((AppState.user.rol || '').toUpperCase())) {
     return Swal.fire({ icon: 'error', title: 'Permiso Denegado', text: 'Solo Jefaturas y Gerencia pueden eliminar registros.' });
@@ -1340,24 +1339,10 @@ window.eliminarRegistro = (id) => {
 };
 
 async function ejecutarAccionCRUD(payload) {
-  // Mostramos el estado de carga antes de iniciar la petición
-  Swal.fire({ 
-    title: 'Procesando...', 
-    text: 'Sincronizando con base de datos.', 
-    allowOutsideClick: false, 
-    didOpen: () => Swal.showLoading() 
-  });
-  
+  Swal.fire({ title: 'Procesando...', text: 'Sincronizando con base de datos.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   try {
-    const response = await fetch(BACKEND_URL, { 
-      method: "POST", 
-      mode: "cors", 
-      redirect: "follow", 
-      headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-      body: JSON.stringify(payload) 
-    });
+    const response = await fetch(BACKEND_URL, { method: "POST", mode: "cors", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
     
-    // Verificamos que el servidor haya devuelto JSON
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("text/html")) throw new Error("Error del servidor (HTML devuelto).");
     if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
@@ -1367,7 +1352,6 @@ async function ejecutarAccionCRUD(payload) {
     if (result.status === "success") {
       Swal.fire({ icon: 'success', title: 'Completado', text: result.message, timer: 1500, showConfirmButton: false });
       
-      // Forzar una recarga completa del historial, simulando un clic en el botón "Actualizar BD"
       const btnRefresh = document.getElementById("btnActualizarHistorial");
       if (btnRefresh) btnRefresh.click();
       

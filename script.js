@@ -5,13 +5,18 @@ import * as THREE from "https://unpkg.com/three@0.160.1/build/three.module.js";
    ================================================================ */
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzTsnqzu-i5fmznYdJMJqGHkCaPUWsuCWbIni0x4BeunvIGdl2mq419TdhtZaJI3x6v/exec";
 
-// 1. Estado Centralizado de la Aplicación (Sesión)
+// 1. Estado Centralizado de la Aplicación
 const AppState = {
   user: null,
   isSessionVerified: false
 };
 
-// --- NUEVO: FUNCIÓN DE BLINDAJE DE ACCESO ---
+// ⚠️ CORRECCIÓN CLAVE: Las matrices de datos deben ser globales para que las funciones de edición (fuera del DOMContentLoaded) puedan leerlas.
+let historialGlobal = [];
+let registrosFiltrados = []; 
+const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+// --- FUNCIÓN DE BLINDAJE DE ACCESO ---
 function verificarAcceso(user) {
   if (!user) return false;
   const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
@@ -27,18 +32,17 @@ function bloquearInterfaz() {
     title: "Acceso Restringido",
     text: "Este módulo es exclusivo para el área de Calidad, Jefaturas y Gerencia.",
     background: "rgba(255, 255, 255, 0.95)",
-    backdrop: "rgba(0,10,30,0.9)", // Fondo oscuro intenso
-    allowOutsideClick: false, // Evita cerrar dando clic afuera
-    allowEscapeKey: false, // Evita cerrar con ESC
-    showConfirmButton: false // Quita el botón de OK
+    backdrop: "rgba(0,10,30,0.9)",
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    showConfirmButton: false
   });
   
-  // Desaparece toda la UI (formularios, tablas, etc.) dejando solo el fondo 3D activo
   const appContainer = document.querySelector(".relative.z-10.flex.flex-col");
   if (appContainer) appContainer.style.display = "none";
 }
 
-// 2. Seguridad y Comunicación con el Padre (Hub)
+// Seguridad y Comunicación con el Padre (Hub)
 window.addEventListener('message', (event) => {
   const { type, user, theme } = event.data || {};
   
@@ -49,17 +53,15 @@ window.addEventListener('message', (event) => {
   if (type === 'SESSION_SYNC' && user) {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     
-    // VALIDACIÓN ESTRICTA DE ROL/ÁREA
     if (!verificarAcceso(user)) {
       bloquearInterfaz();
-      return; // Destruimos la ejecución aquí, no se inicia la sesión local
+      return; 
     }
     
     AppState.user = user;
     AppState.isSessionVerified = true;
     sessionStorage.setItem('moduloCloroUser', JSON.stringify(user));
     
-    // Reactivar botón si estaba bloqueado
     const btn = document.getElementById("submitBtn");
     if (btn) {
       btn.disabled = false;
@@ -74,7 +76,6 @@ window.addEventListener('message', (event) => {
    ================================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   
-  // Verificar si ya hay una sesión guardada y validarla
   const savedUser = sessionStorage.getItem('moduloCloroUser');
   if (savedUser) {
     const userParseado = JSON.parse(savedUser);
@@ -100,9 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 4000);
 
-  // ==============================================================
-  // LÓGICA DE PESTAÑAS (TABS)
-  // ==============================================================
+  // Lógica Tabs
   const btnTabRegistro = document.getElementById("btnTabRegistro");
   const btnTabHistorial = document.getElementById("btnTabHistorial");
   const tabRegistro = document.getElementById("tabRegistro");
@@ -126,9 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cargarHistorial(); 
   });
 
-  // ==============================================================
-  // CONFIGURACIÓN DE FORMULARIO
-  // ==============================================================
+  // Configuración Formulario
   document.getElementById("fecha").valueAsDate = new Date();
   const now = new Date();
   document.getElementById("hora").value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -181,48 +178,31 @@ document.addEventListener("DOMContentLoaded", () => {
   validateInput("ph", 6.0, 7.0, "phAlert");
   validateInput("temperatura", 24, null, "tempAlert");
 
-  // ==============================================================
-  // INTERCEPCIÓN DEL TECLADO (NAVEGACIÓN CON ENTER)
-  // ==============================================================
+  // Intercepción Enter
   const form = document.getElementById("cloroForm");
-  
   form.addEventListener('keydown', (e) => {
-    // Si presiona Enter y NO es el botón de submit, bloqueamos el envío automático
     if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
-      e.preventDefault(); // Bloquea el comportamiento por defecto (Submit)
-      
-      // Definimos el flujo lógico de los campos
+      e.preventDefault();
       const flujoBase = ['fecha', 'hora', 'puntoControl', 'cloro', 'ph', 'temperatura'];
       const flujoAnomalias = ['dosificacion', 'observaciones', 'medidas'];
-      
-      // Si el panel de anomalías está abierto, lo sumamos al flujo
       let flujoActivo = [...flujoBase];
       if (isAccionesActive) flujoActivo = flujoActivo.concat(flujoAnomalias);
-      
       const currentId = e.target.id;
       const currentIndex = flujoActivo.indexOf(currentId);
-      
-      // Si existe un campo siguiente, le pasamos el foco
       if (currentIndex > -1 && currentIndex < flujoActivo.length - 1) {
         const nextInput = document.getElementById(flujoActivo[currentIndex + 1]);
         if (nextInput) nextInput.focus();
       } else if (currentIndex === flujoActivo.length - 1) {
-        // Si es el último campo, simplemente le quitamos el foco. 
-        // El operario DEBE hacer clic explícito en el botón de guardar.
         e.target.blur(); 
       }
     }
   });
 
-  // ==============================================================
-  // SUBMIT EXPLÍCITO (GUARDAR DATOS) - BLINDADO POR SESIÓN
-  // ==============================================================
+  // Submit
   const submitBtn = document.getElementById("submitBtn");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    // 1. BLINDAJE DE SEGURIDAD
     if(!AppState.isSessionVerified || !AppState.user) {
       return Swal.fire({
         icon: "error", title: "Acceso Denegado", text: "No se ha validado una sesión activa desde el Hub.",
@@ -244,26 +224,20 @@ document.addEventListener("DOMContentLoaded", () => {
       usuario: AppState.user.nombre
     };
 
-    // 2. ANIMACIÓN DEL BOTÓN DE GUARDADO
     submitBtn.disabled = true;
     submitBtn.classList.add("opacity-75", "cursor-not-allowed");
-    
-    // Extraemos el spinner en el momento exacto para evitar conflictos de reemplazo de DOM
     const currentSpinner = submitBtn.querySelector("#spinner");
     if(currentSpinner) currentSpinner.classList.remove("hidden");
 
     try {
       const response = await fetch(BACKEND_URL, {
-        method: "POST",
-        mode: "cors",
-        redirect: "follow",
+        method: "POST", mode: "cors", redirect: "follow",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       });
 
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("text/html"))
-        throw new Error("Google devolvió HTML. Verifica el despliegue en GAS.");
+      if (contentType && contentType.includes("text/html")) throw new Error("Google devolvió HTML. Verifica el despliegue en GAS.");
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
       const result = await response.json();
@@ -272,28 +246,18 @@ document.addEventListener("DOMContentLoaded", () => {
           icon: result.data.alarma ? "warning" : "success",
           title: result.data.alarma ? "Registro con Alerta" : "Guardado Exitoso",
           text: result.data.alarma ? "Parámetros fuera de límite. Registrado en base de datos." : "Los parámetros han sido registrados correctamente.",
-          background: "rgba(255, 255, 255, 0.95)",
-          backdrop: "rgba(0,10,30,0.5)",
-          confirmButtonColor: "#2563eb"
+          background: "rgba(255, 255, 255, 0.95)", confirmButtonColor: "#2563eb"
         });
         
-        // 3. LIMPIEZA ABSOLUTA DEL FORMULARIO
         form.reset();
-        const camposAlertas = {
-          "cloro": "cloroAlert",
-          "ph": "phAlert",
-          "temperatura": "tempAlert" 
-        };
-
+        const camposAlertas = { "cloro": "cloroAlert", "ph": "phAlert", "temperatura": "tempAlert" };
         Object.entries(camposAlertas).forEach(([inputId, alertId]) => {
             const inputEl = document.getElementById(inputId);
             const alertEl = document.getElementById(alertId);
-            
             if (inputEl) inputEl.classList.remove("text-red-600");
             if (alertEl) alertEl.classList.add("hidden");
         });
 
-        // Restaurar Fecha y Hora actuales para el siguiente registro
         document.getElementById("fecha").valueAsDate = new Date();
         const resetNow = new Date();
         document.getElementById("hora").value = `${String(resetNow.getHours()).padStart(2, "0")}:${String(resetNow.getMinutes()).padStart(2, "0")}`;
@@ -304,12 +268,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (isAccionesActive) toggleBtn.click();
     } catch (error) {
-      Swal.fire({
-        icon: "error", title: "Fallo de Conexión", text: `Error: ${error.message}`,
-        background: "rgba(255, 255, 255, 0.95)", confirmButtonColor: "#dc2626"
-      });
+      Swal.fire({ icon: "error", title: "Fallo de Conexión", text: `Error: ${error.message}`, background: "rgba(255, 255, 255, 0.95)", confirmButtonColor: "#dc2626" });
     } finally {
-      // 4. RESTAURAR BOTÓN Y ANIMACIÓN
       submitBtn.disabled = false;
       submitBtn.classList.remove("opacity-75", "cursor-not-allowed");
       const endSpinner = submitBtn.querySelector("#spinner");
@@ -318,11 +278,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==============================================================
-  // MOTOR DE HISTORIAL Y FILTROS (LEER DATOS)
+  // MOTOR DE HISTORIAL (LEER DATOS)
   // ==============================================================
-  let historialGlobal = [];
-  let registrosFiltrados = []; 
-
   const filterMes = document.getElementById("filterMes");
   const filterFecha = document.getElementById("filterFecha");
   const filterPunto = document.getElementById("filterPunto");
@@ -331,7 +288,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnDescargarPDF = document.getElementById('btnDescargarPDF');
   const historialGrid = document.getElementById("historialGrid");
   const btnActualizar = document.getElementById("btnActualizarHistorial");
-  const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
   const cargarHistorial = async (forzarRefresh = false) => {
     historialGrid.innerHTML = '<div class="text-center py-10 text-white/70 font-medium animate-pulse">Consultando Base de Datos...</div>';
@@ -340,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch(fetchUrl, { method: "GET", mode: "cors", redirect: "follow" });
       
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("text/html")) throw new Error("El servidor devolvió HTML. Verifica el despliegue en GAS.");
+      if (contentType && contentType.includes("text/html")) throw new Error("El servidor devolvió HTML.");
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
       const result = await response.json();
@@ -358,9 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(result.message);
       }
     } catch (error) {
-      historialGrid.innerHTML = `<div class="text-center p-6 text-red-300 font-bold bg-red-900/40 rounded-2xl border border-red-500/50 backdrop-blur-md">
-        <p class="mb-2">⚠️ Error de Conexión</p><p class="text-xs font-normal">${error.message}</p>
-      </div>`;
+      historialGrid.innerHTML = `<div class="text-center p-6 text-red-300 font-bold bg-red-900/40 rounded-2xl border border-red-500/50 backdrop-blur-md"><p class="mb-2">⚠️ Error de Conexión</p><p class="text-xs font-normal">${error.message}</p></div>`;
     }
   };
 
@@ -374,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
- const renderizarHistorial = () => {
+  const renderizarHistorial = () => {
     const mes = filterMes.value;
     const fechaExacta = filterFecha.value;
     const punto = filterPunto.value;
@@ -405,7 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let htmlContent = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 pb-6">';
     
-    // DICCIONARIO: Traducción de códigos a nombres reales
     const nombresPuntos = {
       "P1": "P1 - Mantenimiento",
       "P2": "P2 - Hielera",
@@ -414,41 +367,37 @@ document.addEventListener("DOMContentLoaded", () => {
       "P5": "P5 - Desposte"
     };
 
-   registrosFiltrados.forEach((item) => {
+    registrosFiltrados.forEach((item) => {
       const isAlerta = item.alarma === true || item.alarma === "TRUE" || item.alarma === true;
       const badgeClass = isAlerta ? "bg-red-500/80 text-white" : "bg-green-500/80 text-white";
 
-      // PREPARACIÓN DE DATOS EXTRA
       const nombrePuntoExtendido = nombresPuntos[item.punto] || item.punto;
-      
-      // NUEVO: Lógica de Nombre Completo con retrocompatibilidad para registros viejos
       let usuarioCrudo = item.usuario || 'OPERARIO';
-      if (usuarioCrudo.includes('@')) {
-          usuarioCrudo = usuarioCrudo.split('@')[0].replace('.', ' '); // Limpia los viejos
-      }
+      if (usuarioCrudo.includes('@')) usuarioCrudo = usuarioCrudo.split('@')[0].replace('.', ' '); 
       const usuarioNombreCompleto = usuarioCrudo.toUpperCase();
-         htmlContent += `
+
+      htmlContent += `
         <div class="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border ${isAlerta ? "border-red-400/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "border-white/40"} text-slate-800 transition-transform hover:-translate-y-1">
-          
           <div class="flex justify-between items-start mb-2 border-b border-slate-300/50 pb-2">
             <div>
               <span class="text-[10px] font-black uppercase text-blue-900 bg-blue-100/50 px-2 py-0.5 rounded-md">${item.id}</span>
               <span class="text-xs font-bold ml-1">${item.fecha} - ${item.hora}</span>
             </div>
             <div class="flex items-center gap-2">
-               <button onclick="editarRegistro('${item.id}')" class="text-slate-400 hover:text-blue-600 transition-colors" title="Editar Registro"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-               <button onclick="eliminarRegistro('${item.id}')" class="text-slate-400 hover:text-red-600 transition-colors" title="Eliminar Registro"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-               
+               <button onclick="editarRegistro('${item.id}')" class="text-slate-500 hover:text-blue-600 transition-colors" title="Editar Registro"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+               <button onclick="eliminarRegistro('${item.id}')" class="text-slate-500 hover:text-red-600 transition-colors" title="Eliminar Registro"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ml-1 ${badgeClass}">${isAlerta ? "Alerta" : "Normal"}</span>
             </div>
-          </div>     
+          </div>
           
           <div class="flex justify-between items-center mb-3 mt-1">
             <span class="font-extrabold text-blue-900 flex items-center gap-1 text-[11px] md:text-xs tracking-tight">📍 ${nombrePuntoExtendido}</span>
             <span class="text-[9px] font-bold text-slate-600 bg-white/50 border border-slate-300/50 px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
               <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-              ${usuarioNombreCompleto} </span>
+              ${usuarioNombreCompleto} 
+            </span>
           </div>
+
           <div class="grid grid-cols-3 gap-2 text-center bg-white/50 rounded-xl p-2 mb-2 shadow-inner">
             <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${item.cloro < 0.5 || item.cloro > 2.0 ? "text-red-600" : ""}">${item.cloro}</p></div>
             <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${item.ph < 6.0 || item.ph > 7.0 ? "text-red-600" : ""}">${item.ph}</p></div>
@@ -467,9 +416,6 @@ document.addEventListener("DOMContentLoaded", () => {
     historialGrid.innerHTML = htmlContent;
   };
 
-  // ==============================================================
-  // MOTOR DE REPORTES (IMPRESIÓN Y PDF)
-  // ==============================================================
   const generarHTMLReporte = (isForPDF = false) => {
     const mesVal = filterMes.value;
     const fechaVal = filterFecha.value;
@@ -513,7 +459,10 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const cantHtml = tieneDosificacion ? r.dosificacion : ''; 
         const cloroHtml = r.cloro; 
-        const monitoreador = r.usuario || ''; 
+        
+        let usuarioCrudo = r.usuario || 'OPERARIO';
+        if (usuarioCrudo.includes('@')) usuarioCrudo = usuarioCrudo.split('@')[0].replace('.', ' ');
+        const monitoreador = usuarioCrudo.toUpperCase();
         
         const fParts = r.fecha.split('-');
         const fechaLimpia = fParts.length === 3 ? `${fParts[2]}/${fParts[1]}/${fParts[0]}` : r.fecha;
@@ -626,26 +575,9 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     if (isForPDF) {
-      return `
-        <style>${cssContent}</style>
-        <div id="pdf-wrapper" class="pdf-master-container">
-          ${paginasHTML}
-        </div>
-      `;
+      return `<style>${cssContent}</style><div id="pdf-wrapper" class="pdf-master-container">${paginasHTML}</div>`;
     } else {
-      return `
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <title>Reporte HACCP</title>
-            <style>${cssContent}</style>
-        </head>
-        <body>
-            ${paginasHTML}
-        </body>
-        </html>
-      `;
+      return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte HACCP</title><style>${cssContent}</style></head><body>${paginasHTML}</body></html>`;
     }
   };
 
@@ -655,17 +587,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const printWindow = window.open("", "_blank");
       printWindow.document.write(generarHTMLReporte(false));
       printWindow.document.close();
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 400);
+      setTimeout(() => { printWindow.focus(); printWindow.print(); }, 400);
     });
   }
 
   if(btnDescargarPDF) {
     btnDescargarPDF.addEventListener("click", async () => {
       if (registrosFiltrados.length === 0) return;
-
       const originalText = btnDescargarPDF.innerHTML;
       btnDescargarPDF.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generando...`;
       btnDescargarPDF.disabled = true;
@@ -676,15 +604,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const fechaVal = filterFecha.value;
 
       if (puntoVal !== "ALL") nombreArchivo += `_${puntoVal}`;
-
-      if (fechaVal !== "") {
-        nombreArchivo += `_${fechaVal}`;
-      } else if (mesVal !== "ALL") {
-        const [y, m] = mesVal.split("-");
-        nombreArchivo += `_${mesesNombres[parseInt(m) - 1]}_${y}`;
-      } else {
-        nombreArchivo += `_General`;
-      }
+      if (fechaVal !== "") nombreArchivo += `_${fechaVal}`;
+      else if (mesVal !== "ALL") { const [y, m] = mesVal.split("-"); nombreArchivo += `_${mesesNombres[parseInt(m) - 1]}_${y}`; } 
+      else nombreArchivo += `_General`;
       nombreArchivo += ".pdf";
 
       const tempDiv = document.createElement("div");
@@ -695,55 +617,133 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.appendChild(tempDiv);
 
       const elementToPrint = tempDiv.querySelector("#pdf-wrapper");
+      const opt = { margin: [10, 10, 10, 10], filename: nombreArchivo, image: { type: "jpeg", quality: 1 }, html2canvas: { scale: 2, useCORS: true, letterRendering: true }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } };
 
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: nombreArchivo,
-        image: { type: "jpeg", quality: 1 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-      };
-
-      try {
-        await html2pdf().set(opt).from(elementToPrint).save();
-      } catch (err) {
-        console.error("Error generando PDF", err);
-      } finally {
-        document.body.removeChild(tempDiv);
-        btnDescargarPDF.innerHTML = originalText;
-        btnDescargarPDF.disabled = false;
-      }
+      try { await html2pdf().set(opt).from(elementToPrint).save(); } 
+      catch (err) { console.error("Error generando PDF", err); } 
+      finally { document.body.removeChild(tempDiv); btnDescargarPDF.innerHTML = originalText; btnDescargarPDF.disabled = false; }
     });
   }
 
-  // ==============================================================
-  // LISTENERS DE FILTROS
-  // ==============================================================
-  if(filterMes) filterMes.addEventListener("change", () => {
-    if (filterMes.value !== "ALL") filterFecha.value = "";
-    renderizarHistorial();
-  });
-
-  if(filterFecha) filterFecha.addEventListener("change", () => {
-    if (filterFecha.value !== "") filterMes.value = "ALL";
-    renderizarHistorial();
-  });
-
+  if(filterMes) filterMes.addEventListener("change", () => { if (filterMes.value !== "ALL") filterFecha.value = ""; renderizarHistorial(); });
+  if(filterFecha) filterFecha.addEventListener("change", () => { if (filterFecha.value !== "") filterMes.value = "ALL"; renderizarHistorial(); });
   if(filterPunto) filterPunto.addEventListener("change", renderizarHistorial);
-
-  if(btnLimpiarFiltros) btnLimpiarFiltros.addEventListener("click", () => {
-    filterMes.value = "ALL";
-    filterFecha.value = "";
-    filterPunto.value = "ALL";
-    renderizarHistorial();
-  });
-
-  if(btnActualizar) btnActualizar.addEventListener("click", () => {
-    cargarHistorial(true);
-  });
+  if(btnLimpiarFiltros) btnLimpiarFiltros.addEventListener("click", () => { filterMes.value = "ALL"; filterFecha.value = ""; filterPunto.value = "ALL"; renderizarHistorial(); });
+  if(btnActualizar) btnActualizar.addEventListener("click", () => { cargarHistorial(true); });
 
   cargarHistorial();
 });
+
+// ==============================================================
+// 3. CONTROLADORES CRUD (EDICIÓN Y ELIMINACIÓN)
+// ==============================================================
+window.editarRegistro = (id) => {
+  const reg = historialGlobal.find(r => r.id === id);
+  if (!reg) return;
+
+  Swal.fire({
+    title: `<span class="text-blue-900 font-bold">Editar ${id}</span>`,
+    html: `
+      <div class="grid grid-cols-2 gap-4 text-left px-2">
+          <div><label class="text-xs font-bold text-slate-500 uppercase">Cloro (ppm)</label>
+          <input id="swal-cloro" type="number" step="0.01" value="${reg.cloro}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div><label class="text-xs font-bold text-slate-500 uppercase">pH</label>
+          <input id="swal-ph" type="number" step="0.1" value="${reg.ph}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div><label class="text-xs font-bold text-slate-500 uppercase">Temp (°C)</label>
+          <input id="swal-temp" type="number" step="0.1" value="${reg.temp}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div><label class="text-xs font-bold text-slate-500 uppercase">Dosific. (L)</label>
+          <input id="swal-dosif" type="number" step="0.01" value="${reg.dosificacion}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Acción Correctiva</label>
+          <input id="swal-medidas" type="text" value="${reg.medidas || ''}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+          
+          <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Observaciones</label>
+          <input id="swal-obs" type="text" value="${reg.observaciones || ''}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Guardar Cambios',
+    cancelButtonText: 'Cancelar',
+    preConfirm: () => {
+      const inputCloro = document.getElementById('swal-cloro');
+      const inputPh = document.getElementById('swal-ph');
+      const inputTemp = document.getElementById('swal-temp');
+      const inputDosif = document.getElementById('swal-dosif');
+      const inputMedidas = document.getElementById('swal-medidas');
+      const inputObs = document.getElementById('swal-obs');
+
+      if (!inputCloro || !inputPh || !inputTemp) {
+        Swal.showValidationMessage('Error al leer los datos del formulario');
+        return false;
+      }
+
+      return {
+        action: 'update',
+        id: reg.id,
+        cloro: parseFloat(inputCloro.value) || 0,
+        ph: parseFloat(inputPh.value) || 0,
+        temperatura: parseFloat(inputTemp.value) || 0,
+        dosificacion: parseFloat(inputDosif.value) || "",
+        medidasCorrectivas: inputMedidas.value,
+        observaciones: inputObs.value,
+        usuario: AppState.user ? AppState.user.nombre : "Usuario"
+      };
+    }
+  }).then((result) => {
+    if (result.isConfirmed && result.value) {
+      ejecutarAccionCRUD(result.value);
+    }
+  });
+};
+
+window.eliminarRegistro = (id) => {
+  const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
+  if (!AppState.user || !rolesPermitidos.includes((AppState.user.rol || '').toUpperCase())) {
+    return Swal.fire({ icon: 'error', title: 'Permiso Denegado', text: 'Solo Jefaturas y Gerencia pueden eliminar registros.' });
+  }
+
+  Swal.fire({
+    title: '¿Estás seguro?',
+    text: `Se eliminará permanentemente el registro ${id}. Esta acción no se puede deshacer.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#64748b',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      ejecutarAccionCRUD({ action: 'delete', id: id });
+    }
+  });
+};
+
+async function ejecutarAccionCRUD(payload) {
+  Swal.fire({ title: 'Procesando...', text: 'Sincronizando con base de datos.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  try {
+    const response = await fetch(BACKEND_URL, { method: "POST", mode: "cors", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("text/html")) throw new Error("Error del servidor (HTML devuelto).");
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+    const result = await response.json();
+    if (result.status === "success") {
+      Swal.fire({ icon: 'success', title: 'Completado', text: result.message, timer: 1500, showConfirmButton: false });
+      const btnRefresh = document.getElementById("btnActualizarHistorial");
+      if (btnRefresh) btnRefresh.click();
+    } else {
+      throw new Error(result.message);
+    }
+  } catch (error) {
+    Swal.fire({ icon: "error", title: "Fallo de Servidor", text: error.message });
+  }
+}
 
 /* ================================================================
    2. MOTOR GRÁFICO (THREE.JS - LIQUID GLASS)
@@ -864,11 +864,7 @@ function spawn(x, y, r, vx = 0, vy = 0) {
 }
 
 for (let i = 0; i < 12; i++) {
-  spawn(
-    (Math.random() - 0.5) * 0.7,
-    (Math.random() - 0.5) * 0.5,
-    0.03 + Math.random() * 0.05
-  );
+  spawn((Math.random() - 0.5) * 0.7, (Math.random() - 0.5) * 0.5, 0.03 + Math.random() * 0.05);
 }
 
 const vertSrc = `void main(){ gl_Position = vec4(position, 1.0); }`;
@@ -929,12 +925,7 @@ const mat = new THREE.ShaderMaterial({
   vertexShader: vertSrc,
   fragmentShader: fragSrc,
   uniforms: {
-    uRes: {
-      value: new THREE.Vector2(
-        renderer.domElement.width,
-        renderer.domElement.height
-      )
-    },
+    uRes: { value: new THREE.Vector2(renderer.domElement.width, renderer.domElement.height) },
     uData: { value: dropletTex },
     uBg: { value: bgTexture },
     uCount: { value: 0 },
@@ -962,43 +953,24 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   mouse.down = true;
 
   for (let i = 0; i < 4; i++) {
-    spawn(
-      mouse.x + (Math.random() - 0.5) * 0.08, 
-      mouse.y + (Math.random() - 0.5) * 0.08, 
-      0.02 + Math.random() * 0.03            
-    );
+    spawn(mouse.x + (Math.random() - 0.5) * 0.08, mouse.y + (Math.random() - 0.5) * 0.08, 0.02 + Math.random() * 0.03);
   }
 });
 
 renderer.domElement.addEventListener("pointerup", () => (mouse.down = false));
-renderer.domElement.addEventListener("pointerleave", () => {
-  mouse.active = false;
-  mouse.down = false;
-});
+renderer.domElement.addEventListener("pointerleave", () => { mouse.active = false; mouse.down = false; });
 
 window.addEventListener("resize", () => {
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
   aspect = innerWidth / innerHeight;
-  mat.uniforms.uRes.value.set(
-    renderer.domElement.width,
-    renderer.domElement.height
-  );
+  mat.uniforms.uRes.value.set(renderer.domElement.width, renderer.domElement.height);
   drawBackground();
 });
 
-const DAMP = 0.993,
-  MOUSE_R = 0.18,
-  MOUSE_F = 0.004,
-  TENSION_RANGE = 0.12,
-  TENSION_F = 0.0004;
-const MERGE_RATIO = 0.62,
-  SPLIT_SPEED = 0.013,
-  SPLIT_MIN_R = 0.04,
-  MAX_SPEED = 0.015;
-const BOUNCE = 0.4,
-  WANDER_F = 0.00004,
-  CENTER_PULL = 0.000008;
+const DAMP = 0.993, MOUSE_R = 0.18, MOUSE_F = 0.004, TENSION_RANGE = 0.12, TENSION_F = 0.0004;
+const MERGE_RATIO = 0.62, SPLIT_SPEED = 0.013, SPLIT_MIN_R = 0.04, MAX_SPEED = 0.015;
+const BOUNCE = 0.4, WANDER_F = 0.00004, CENTER_PULL = 0.000008;
 
 function applyForces(time) {
   for (const d of drops) {
@@ -1008,8 +980,7 @@ function applyForces(time) {
     d.vx -= d.x * CENTER_PULL;
     d.vy -= d.y * CENTER_PULL;
     if (mouse.active) {
-      const dx = d.x - mouse.x,
-        dy = d.y - mouse.y;
+      const dx = d.x - mouse.x, dy = d.y - mouse.y;
       const dSq = dx * dx + dy * dy;
       const rr = MOUSE_R + d.r;
       if (dSq < rr * rr && dSq > 1e-5) {
@@ -1025,20 +996,15 @@ function applyForces(time) {
     const a = drops[i];
     for (let j = i + 1; j < drops.length; j++) {
       const b = drops[j];
-      const dx = b.x - a.x,
-        dy = b.y - a.y;
+      const dx = b.x - a.x, dy = b.y - a.y;
       const dSq = dx * dx + dy * dy;
       const rng = TENSION_RANGE + a.r + b.r;
       if (dSq < rng * rng && dSq > 1e-5) {
         const dist = Math.sqrt(dSq);
         const s = 1 - dist / rng;
         const f = s * TENSION_F;
-        const fx = (dx / dist) * f,
-          fy = (dy / dist) * f;
-        a.vx += fx;
-        a.vy += fy;
-        b.vx -= fx;
-        b.vy -= fy;
+        const fx = (dx / dist) * f, fy = (dy / dist) * f;
+        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
       }
     }
   }
@@ -1047,33 +1013,13 @@ function applyForces(time) {
 function integrate() {
   for (const d of drops) {
     const sp = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
-    if (sp > MAX_SPEED) {
-      const s = MAX_SPEED / sp;
-      d.vx *= s;
-      d.vy *= s;
-    }
-    d.x += d.vx;
-    d.y += d.vy;
-    d.vx *= DAMP;
-    d.vy *= DAMP;
-    const wx = aspect * 0.5,
-      wy = 0.5;
-    if (d.x - d.r < -wx) {
-      d.x = -wx + d.r;
-      d.vx = Math.abs(d.vx) * BOUNCE;
-    }
-    if (d.x + d.r > wx) {
-      d.x = wx - d.r;
-      d.vx = -Math.abs(d.vx) * BOUNCE;
-    }
-    if (d.y - d.r < -wy) {
-      d.y = -wy + d.r;
-      d.vy = Math.abs(d.vy) * BOUNCE;
-    }
-    if (d.y + d.r > wy) {
-      d.y = wy - d.r;
-      d.vy = -Math.abs(d.vy) * BOUNCE;
-    }
+    if (sp > MAX_SPEED) { const s = MAX_SPEED / sp; d.vx *= s; d.vy *= s; }
+    d.x += d.vx; d.y += d.vy; d.vx *= DAMP; d.vy *= DAMP;
+    const wx = aspect * 0.5, wy = 0.5;
+    if (d.x - d.r < -wx) { d.x = -wx + d.r; d.vx = Math.abs(d.vx) * BOUNCE; }
+    if (d.x + d.r > wx) { d.x = wx - d.r; d.vx = -Math.abs(d.vx) * BOUNCE; }
+    if (d.y - d.r < -wy) { d.y = -wy + d.r; d.vy = Math.abs(d.vy) * BOUNCE; }
+    if (d.y + d.r > wy) { d.y = wy - d.r; d.vy = -Math.abs(d.vy) * BOUNCE; }
   }
 }
 
@@ -1084,8 +1030,7 @@ function mergeDroplets() {
     for (let j = i + 1; j < drops.length; j++) {
       const b = drops[j];
       if (!b.alive) continue;
-      const dx = b.x - a.x,
-        dy = b.y - a.y;
+      const dx = b.x - a.x, dy = b.y - a.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < (a.r + b.r) * MERGE_RATIO) {
         const na = a.area + b.area;
@@ -1108,32 +1053,14 @@ function splitDroplets() {
     if (d.r < SPLIT_MIN_R) continue;
     const sp = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
     if (sp < SPLIT_SPEED) continue;
-    const ha = d.area * 0.5,
-      nr = Math.sqrt(ha / Math.PI);
-    const nx = -d.vy / sp,
-      ny = d.vx / sp,
-      off = nr * 0.7;
-    d.r = nr;
-    d.area = ha;
-    d.x -= nx * off;
-    d.y -= ny * off;
+    const ha = d.area * 0.5, nr = Math.sqrt(ha / Math.PI);
+    const nx = -d.vy / sp, ny = d.vx / sp, off = nr * 0.7;
+    d.r = nr; d.area = ha; d.x -= nx * off; d.y -= ny * off;
     add.push({
-      id: uid++,
-      x: d.x + nx * off * 2,
-      y: d.y + ny * off * 2,
-      r: nr,
-      area: ha,
-      vx: d.vx + nx * sp * 0.35,
-      vy: d.vy + ny * sp * 0.35,
-      alive: true,
-      wanderAngle: Math.random() * Math.PI * 2,
-      wanderSpeed: 0.3 + Math.random() * 0.5,
-      softPrevX: d.x + nx * off * 2,
-      softPrevY: d.y + ny * off * 2,
-      softOffX: 0,
-      softOffY: 0,
-      softVelX: 0,
-      softVelY: 0
+      id: uid++, x: d.x + nx * off * 2, y: d.y + ny * off * 2, r: nr, area: ha,
+      vx: d.vx + nx * sp * 0.35, vy: d.vy + ny * sp * 0.35, alive: true,
+      wanderAngle: Math.random() * Math.PI * 2, wanderSpeed: 0.3 + Math.random() * 0.5,
+      softPrevX: d.x + nx * off * 2, softPrevY: d.y + ny * off * 2, softOffX: 0, softOffY: 0, softVelX: 0, softVelY: 0
     });
   }
   for (const a of add) if (drops.length < MAX_DROPLETS) drops.push(a);
@@ -1144,11 +1071,7 @@ function autoSpawn() {
   autoTimer += FIXED_DT_MS;
   if (autoTimer > 2000 && drops.length < 10) {
     autoTimer = 0;
-    spawn(
-      (Math.random() - 0.5) * aspect * 0.6,
-      (Math.random() - 0.5) * 0.6,
-      0.025 + Math.random() * 0.03
-    );
+    spawn((Math.random() - 0.5) * aspect * 0.6, (Math.random() - 0.5) * 0.6, 0.025 + Math.random() * 0.03);
   }
 }
 
@@ -1157,41 +1080,26 @@ function mouseSpawn() {
   spawnCD -= FIXED_DT_MS;
   if (spawnCD <= 0 && drops.length < MAX_DROPLETS) {
     spawnCD = 120;
-    spawn(
-      mouse.x + (Math.random() - 0.5) * 0.02,
-      mouse.y + (Math.random() - 0.5) * 0.02,
-      0.02 + Math.random() * 0.015
-    );
+    spawn(mouse.x + (Math.random() - 0.5) * 0.02, mouse.y + (Math.random() - 0.5) * 0.02, 0.02 + Math.random() * 0.015);
   }
 }
 
-const SOFT_STIFFNESS = 0.22,
-  SOFT_DAMPING = 0.6;
+const SOFT_STIFFNESS = 0.22, SOFT_DAMPING = 0.6;
 function updateSoftBodies() {
   for (const d of drops) {
-    const dx = d.x - d.softPrevX,
-      dy = d.y - d.softPrevY;
+    const dx = d.x - d.softPrevX, dy = d.y - d.softPrevY;
     d.softVelX += (dx - d.softOffX) * SOFT_STIFFNESS;
     d.softVelY += (dy - d.softOffY) * SOFT_STIFFNESS;
-    d.softVelX *= SOFT_DAMPING;
-    d.softVelY *= SOFT_DAMPING;
-    d.softOffX += d.softVelX;
-    d.softOffY += d.softVelY;
-    d.softPrevX = d.x;
-    d.softPrevY = d.y;
+    d.softVelX *= SOFT_DAMPING; d.softVelY *= SOFT_DAMPING;
+    d.softOffX += d.softVelX; d.softOffY += d.softVelY;
+    d.softPrevX = d.x; d.softPrevY = d.y;
   }
 }
 
 let simTime = 0;
 function fixedUpdate() {
   simTime += FIXED_DT_MS;
-  applyForces(simTime);
-  integrate();
-  mergeDroplets();
-  splitDroplets();
-  updateSoftBodies();
-  autoSpawn();
-  mouseSpawn();
+  applyForces(simTime); integrate(); mergeDroplets(); splitDroplets(); updateSoftBodies(); autoSpawn(); mouseSpawn();
 }
 
 function sync() {
@@ -1199,166 +1107,24 @@ function sync() {
   const n = Math.min(drops.length, MAX_DROPLETS);
   for (let i = 0; i < n; i++) {
     const d = drops[i];
-    dropletBuf[i * 4] = d.x;
-    dropletBuf[i * 4 + 1] = d.y;
-    dropletBuf[i * 4 + 2] = d.r;
-    dropletBuf[i * 4 + 3] = 1;
-    const ghostScale = 0.7,
-      trailStr = 3.5,
-      gi = (n + i) * 4;
+    dropletBuf[i * 4] = d.x; dropletBuf[i * 4 + 1] = d.y; dropletBuf[i * 4 + 2] = d.r; dropletBuf[i * 4 + 3] = 1;
+    const ghostScale = 0.7, trailStr = 3.5, gi = (n + i) * 4;
     dropletBuf[gi] = d.x - d.softOffX * trailStr;
     dropletBuf[gi + 1] = d.y - d.softOffY * trailStr;
-    dropletBuf[gi + 2] = d.r * ghostScale;
-    dropletBuf[gi + 3] = 1;
+    dropletBuf[gi + 2] = d.r * ghostScale; dropletBuf[gi + 3] = 1;
   }
   dropletTex.needsUpdate = true;
   mat.uniforms.uCount.value = n * 2;
 }
 
-let last = performance.now(),
-  acc = 0,
-  paused = false;
-document.addEventListener("visibilitychange", () => {
-  paused = document.hidden;
-  if (!paused) last = performance.now();
-});
+let last = performance.now(), acc = 0, paused = false;
+document.addEventListener("visibilitychange", () => { paused = document.hidden; if (!paused) last = performance.now(); });
 
 (function loop() {
-  if (paused) {
-    requestAnimationFrame(loop);
-    return;
-  }
-  const now = performance.now(),
-    dt = Math.min(now - last, MAX_FRAME_DT_MS);
-  last = now;
-  acc += dt;
-  let g = 0;
-  while (acc >= FIXED_DT_MS && g < MAX_CATCHUP) {
-    fixedUpdate();
-    acc -= FIXED_DT_MS;
-    g++;
-  }
+  if (paused) { requestAnimationFrame(loop); return; }
+  const now = performance.now(), dt = Math.min(now - last, MAX_FRAME_DT_MS);
+  last = now; acc += dt; let g = 0;
+  while (acc >= FIXED_DT_MS && g < MAX_CATCHUP) { fixedUpdate(); acc -= FIXED_DT_MS; g++; }
   if (g >= MAX_CATCHUP) acc = 0;
-  mat.uniforms.uTime.value = now * 0.001;
-  sync();
-  renderer.render(scene, camera);
-  requestAnimationFrame(loop);
+  mat.uniforms.uTime.value = now * 0.001; sync(); renderer.render(scene, camera); requestAnimationFrame(loop);
 })();
-
-// ==============================================================
-// 3. CONTROLADORES CRUD (EDICIÓN Y ELIMINACIÓN)
-// ==============================================================
-
-// ⚠️ CORRECCIÓN CLAVE: Agregamos window. para que el HTML pueda llamar a la función
-window.editarRegistro = (id) => {
-  const reg = historialGlobal.find(r => r.id === id);
-  if (!reg) return;
-
-  Swal.fire({
-    title: `<span class="text-blue-900 font-bold">Editar ${id}</span>`,
-    html: `
-      <div class="grid grid-cols-2 gap-4 text-left px-2">
-          <div><label class="text-xs font-bold text-slate-500 uppercase">Cloro (ppm)</label>
-          <input id="swal-cloro" type="number" step="0.01" value="${reg.cloro}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
-          
-          <div><label class="text-xs font-bold text-slate-500 uppercase">pH</label>
-          <input id="swal-ph" type="number" step="0.1" value="${reg.ph}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
-          
-          <div><label class="text-xs font-bold text-slate-500 uppercase">Temp (°C)</label>
-          <input id="swal-temp" type="number" step="0.1" value="${reg.temp}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
-          
-          <div><label class="text-xs font-bold text-slate-500 uppercase">Dosific. (L)</label>
-          <input id="swal-dosif" type="number" step="0.01" value="${reg.dosificacion}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
-          
-          <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Acción Correctiva</label>
-          <input id="swal-medidas" type="text" value="${reg.medidas || ''}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
-          
-          <div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Observaciones</label>
-          <input id="swal-obs" type="text" value="${reg.observaciones || ''}" class="w-full p-2.5 border border-slate-300 bg-slate-50 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"></div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonColor: '#2563eb',
-    cancelButtonColor: '#64748b',
-    confirmButtonText: 'Guardar Cambios',
-    cancelButtonText: 'Cancelar',
-    preConfirm: () => {
-      const inputCloro = document.getElementById('swal-cloro');
-      const inputPh = document.getElementById('swal-ph');
-      const inputTemp = document.getElementById('swal-temp');
-      const inputDosif = document.getElementById('swal-dosif');
-      const inputMedidas = document.getElementById('swal-medidas');
-      const inputObs = document.getElementById('swal-obs');
-
-      if (!inputCloro || !inputPh || !inputTemp) {
-        Swal.showValidationMessage('Error al leer los datos del formulario');
-        return false;
-      }
-
-      return {
-        action: 'update',
-        id: reg.id,
-        cloro: parseFloat(inputCloro.value) || 0,
-        ph: parseFloat(inputPh.value) || 0,
-        temperatura: parseFloat(inputTemp.value) || 0,
-        dosificacion: parseFloat(inputDosif.value) || "",
-        medidasCorrectivas: inputMedidas.value,
-        observaciones: inputObs.value,
-        usuario: AppState.user ? AppState.user.nombre : "Usuario"
-      };
-    }
-  }).then((result) => {
-    if (result.isConfirmed && result.value) {
-      ejecutarAccionCRUD(result.value);
-    }
-  });
-};
-
-// ⚠️ CORRECCIÓN CLAVE: Hacemos la función eliminarRegistro global
-window.eliminarRegistro = (id) => {
-  const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
-  if (!AppState.user || !rolesPermitidos.includes((AppState.user.rol || '').toUpperCase())) {
-    return Swal.fire({ icon: 'error', title: 'Permiso Denegado', text: 'Solo Jefaturas y Gerencia pueden eliminar registros.' });
-  }
-
-  Swal.fire({
-    title: '¿Estás seguro?',
-    text: `Se eliminará permanentemente el registro ${id}. Esta acción no se puede deshacer.`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#64748b',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      ejecutarAccionCRUD({ action: 'delete', id: id });
-    }
-  });
-};
-
-async function ejecutarAccionCRUD(payload) {
-  Swal.fire({ title: 'Procesando...', text: 'Sincronizando con base de datos.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-  try {
-    const response = await fetch(BACKEND_URL, { method: "POST", mode: "cors", redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-    
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("text/html")) throw new Error("Error del servidor (HTML devuelto).");
-    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
-    const result = await response.json();
-    
-    if (result.status === "success") {
-      Swal.fire({ icon: 'success', title: 'Completado', text: result.message, timer: 1500, showConfirmButton: false });
-      
-      const btnRefresh = document.getElementById("btnActualizarHistorial");
-      if (btnRefresh) btnRefresh.click();
-      
-    } else {
-      throw new Error(result.message);
-    }
-  } catch (error) {
-    Swal.fire({ icon: "error", title: "Fallo de Servidor", text: error.message });
-  }
-}

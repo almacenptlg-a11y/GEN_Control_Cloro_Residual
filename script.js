@@ -174,9 +174,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  validateInput("cloro", 0.5, 2.0, "cloroAlert");
-  validateInput("ph", 6.0, 7.0, "phAlert");
-  validateInput("temperatura", 24, null, "tempAlert");
+  validateInput("cloro", 0.2, 2.0, "cloroAlert");
+  validateInput("ph", 5.5, 7.5, "phAlert");
+  validateInput("temperatura", 26, null, "tempAlert");
 
   // Intercepción Enter
   const form = document.getElementById("cloroForm");

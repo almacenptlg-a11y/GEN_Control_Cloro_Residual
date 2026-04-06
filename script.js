@@ -398,11 +398,12 @@ document.addEventListener("DOMContentLoaded", () => {
             </span>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 text-center bg-white/50 rounded-xl p-2 mb-2 shadow-inner">
-            <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${item.cloro < 0.5 || item.cloro > 2.0 ? "text-red-600" : ""}">${item.cloro}</p></div>
-            <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${item.ph < 6.0 || item.ph > 7.0 ? "text-red-600" : ""}">${item.ph}</p></div>
-            <div><p class="text-[9px] font-bold uppercase text-slate-500">Temp</p><p class="font-black ${item.temp >= 24.0 ? "text-red-600" : ""}">${item.temp}°</p></div>
+         <div class="grid grid-cols-3 gap-2 text-center bg-white/50 rounded-xl p-2 mb-2 shadow-inner">
+            <div><p class="text-[9px] font-bold uppercase text-slate-500">Cloro</p><p class="font-black ${item.cloro < 0.2 || item.cloro > 2.0 ? "text-red-600" : ""}">${item.cloro}</p></div>
+            <div><p class="text-[9px] font-bold uppercase text-slate-500">pH</p><p class="font-black ${item.ph < 5.5 || item.ph > 7.5 ? "text-red-600" : ""}">${item.ph}</p></div>
+            <div><p class="text-[9px] font-bold uppercase text-slate-500">Temp</p><p class="font-black ${item.temp >= 26.0 ? "text-red-600" : ""}">${item.temp}°</p></div>
           </div>
+          
           ${item.dosificacion || item.observaciones || item.medidas ? `
             <div class="bg-blue-50/50 rounded-xl p-2 text-xs border border-blue-200/50">
               ${item.dosificacion ? `<p><strong class="text-blue-900">Dosificación:</strong> ${item.dosificacion} L</p>` : ""}
@@ -522,13 +523,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     ${filasHTML}
                 </tbody>
             </table>
-            <div class="footer-grid">
+
+               <div class="footer-grid">
                 <div class="legend-box">
                     <div class="leyenda-title">LEYENDA Y RANGOS NORMATIVOS</div>
                     <p><strong>P1:</strong> DESPOSTE | <strong>P2:</strong> HIELERA | <strong>P3:</strong> ENFRIAMIENTO | <strong>P4:</strong> PELADO | <strong>P5:</strong> MANTENIMIENTO</p>
-                    <p style="margin-top: 4px;">CLR = 0.50 - 2.00 ppm es <span class="conforme">✓ CONFORME</span> | CLR < 0.50 o > 2.00 ppm es <span class="no-conforme">✗ NO CONFORME</span></p>
-                    <p style="margin-top: 4px;"><strong>pH:</strong> 6.0 - 7.0 | <strong>Temp. Max:</strong> 24.0 °C</p>
-                </div>
+                    <p style="margin-top: 4px;">CLR = 0.20 - 2.00 ppm es <span class="conforme">✓ CONFORME</span> | CLR < 0.20 o > 2.00 ppm es <span class="no-conforme">✗ NO CONFORME</span></p>
+                    <p style="margin-top: 4px;"><strong>pH:</strong> 5.5 - 7.5 | <strong>Temp. Max:</strong> 26.0 °C</p>
+                </div>       
                 <div class="firma-box">
                     <div class="linea-firma">JEFE DE ASEGURAMIENTO DE CALIDAD</div>
                 </div>

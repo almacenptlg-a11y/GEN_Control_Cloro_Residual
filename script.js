@@ -22,8 +22,8 @@ function verificarAcceso(user) {
   const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
   const userRol = (user.rol || '').toUpperCase();
   const userArea = (user.area || '').toUpperCase();
-  
-  return rolesPermitidos.includes(userRol) || userArea === 'CALIDAD';
+  const userJefatura = (user.jefatura || '').toUpperCase();
+  return rolesPermitidos.includes(userRol) || userJefatura === 'CALIDAD';
 }
 
 function bloquearInterfaz() {
@@ -705,7 +705,7 @@ window.editarRegistro = (id) => {
 };
 
 window.eliminarRegistro = (id) => {
-  const rolesPermitidos = ['JEFE', 'GERENTE', 'ADMINISTRADOR'];
+  const rolesPermitidos = ['JEFE', 'SUPERVISOR', 'ADMINISTRADOR'];
   if (!AppState.user || !rolesPermitidos.includes((AppState.user.rol || '').toUpperCase())) {
     return Swal.fire({ icon: 'error', title: 'Permiso Denegado', text: 'Solo Jefaturas y Gerencia pueden eliminar registros.' });
   }
